@@ -47,7 +47,8 @@
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
-.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px;display:flex;flex-direction:column;gap:22px}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 56px;display:flex;flex-direction:column;gap:18px}
+body.has-tabs .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .tnum{font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
 #app{display:flex;flex-direction:column;gap:22px}
@@ -58,9 +59,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* En-tête */
 .top{display:flex;flex-direction:column;gap:10px}
 .eyebrow{font:600 12px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-h1{font:700 clamp(30px,8vw,40px)/1 var(--display);text-transform:uppercase;letter-spacing:.01em}
+h1{font:700 clamp(20px,5.6vw,28px)/1.05 var(--display);text-transform:uppercase;letter-spacing:.01em}
 .weekbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.weekbar select{flex:1 1 200px;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-weight:600}
+.weekbar select{flex:1 1 180px;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-weight:600}
 
 /* Boutons et champs */
 .btn{font:600 14px/1.1 var(--body);border-radius:8px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);cursor:pointer;white-space:nowrap}
@@ -153,7 +154,7 @@ button.s-cover{cursor:pointer}
 .chip.warn{color:var(--gap);border-color:var(--gap)}
 
 /* Messages */
-.tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:2px}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;padding-bottom:2px}
 .tab{font:600 14px/1 var(--body);padding:9px 12px;border-radius:8px;border:0;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap}
 .tab.on{background:var(--sunk);color:var(--ink)}
 .msgbox{display:flex;flex-direction:column;gap:10px}
@@ -212,6 +213,26 @@ button.p-relance{padding:4px 8px;border-radius:99px}
 .banner b{color:var(--wait);font:700 15px/1.1 var(--display);text-transform:uppercase;letter-spacing:.05em}
 .loading{padding:40px 0;text-align:center;color:var(--muted)}
 
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.tb{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;border:0;background:transparent;color:var(--muted);font:600 11px/1.1 var(--body);cursor:pointer;min-width:0}
+.tb svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tb.on{color:var(--accent)}
+.tb.on::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+.tb-badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--gap);color:var(--on-gap);font:700 11px/18px var(--body);text-align:center}
+.tb-dot{position:absolute;top:7px;left:calc(50% + 9px);width:9px;height:9px;border-radius:99px;background:var(--gap)}
+details.acc > summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;font:600 14px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+details.acc > summary::-webkit-details-marker{display:none}
+details.acc > summary::after{content:"+";font:400 24px/1 var(--body);color:var(--muted)}
+details.acc[open] > summary::after{content:"–"}
+details.set.acc{display:block}
+.acc-body{display:flex;flex-direction:column;gap:12px;padding-top:10px;padding-bottom:4px}
+.conf-acc > summary{font-size:13px;color:var(--muted)}
+.conf-acc[open] > .panel{margin-top:8px}
+.view-title{font:700 24px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
+.view-reglages #reg-det > summary{display:none}
+.view-reglages #reg-det > .set:first-of-type{margin-top:0}
+body.has-tabs .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-weight:600;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
 
 @media (max-width:420px){
@@ -230,11 +251,12 @@ button.p-relance{padding:4px 8px;border-radius:99px}
     <h1>Remplacements de garde</h1>
     <div class="weekbar">
       <select id="weekSel" aria-label="Semaine de garde"></select>
-      <button class="btn" id="newWeekBtn" type="button">Nouvelle semaine</button>
+      <button class="btn" id="newWeekBtn" type="button" aria-label="Nouvelle semaine de garde" title="Nouvelle semaine de garde">+ Semaine</button>
     </div>
   </header>
   <main id="app"><div class="loading">Chargement du planning…</div></main>
 </div>
+<nav class="tabbar" id="tabbar" aria-label="Sections" hidden></nav>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -243,7 +265,7 @@ button.p-relance{padding:4px 8px;border-radius:99px}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "6 nov. 2026 (n°8)";
+const APP_VERSION = "6 nov. 2026 (n°9)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -981,7 +1003,7 @@ function gapsView(m, week){
   return `<section class="sec"><h2>À couvrir</h2>
     ${items ? `<div class="panel list">${items}</div>` : `<p class="muted">${provItems ? "Aucun créneau libre : le reste est en attente de validation." : "Aucun créneau à couvrir."}</p>`}
     ${provItems ? `<h3 id="att-sec">En attente de validation</h3><div class="panel list">${provItems}</div>` : ""}
-    ${remplItems ? `<h3 id="conf-sec">Remplacements confirmés</h3><div class="panel list">${remplItems}</div>` : ""}
+    ${remplItems ? `<details class="acc conf-acc" data-acc="confirmes" id="conf-sec"${(S.ui.part || String(S.ui.confirm || "").startsWith("r:") || (S.ui.acc || {}).confirmes) ? " open" : ""}><summary>Remplacements confirmés (${rs.length})</summary><div class="panel list">${remplItems}</div></details>` : ""}
   </section>`;
 }
 
@@ -1026,6 +1048,7 @@ function suiviView(week){
     </div></section>`;
 }
 
+function accOpen(k){ return (S.ui.acc || {})[k] ? " open" : ""; }
 function settingsView(week, reg){
   const hasPlage = !!week.plage;
   const [ps, pe] = hasPlage ? week.plage.split("-") : ["19:00", "07:00"];
@@ -1034,11 +1057,11 @@ function settingsView(week, reg){
   const c = reg.cycle;
   const delConf = S.ui.confirm === "w:" + week.id;
   return `<details class="panel" id="reg-det"${S.ui.settingsOpen ? " open" : ""}><summary>Réglages</summary>
-    <div class="set"><h3>Plages de garde de cette semaine</h3>
+    <details class="set acc" data-acc="Plages de garde de cette semaine"${accOpen("Plages de garde de cette semaine")}><summary>Plages de garde de cette semaine</summary><div class="acc-body">
       ${periodesOf(week).map(p => `<div class="mini"><span class="tnum">${esc(fmtSlot({ s: hFloor(p.debut), e: hCeil(p.fin) }))}</span></div>`).join("")}
       <div class="actions"><button type="button" class="btn small" data-act="regen">Recalculer depuis le modèle</button></div>
-    </div>
-    <div class="set"><h3>Mes plages de garde</h3>
+    </div></details>
+    <details class="set acc" data-acc="Mes plages de garde"${accOpen("Mes plages de garde")}><summary>Mes plages de garde</summary><div class="acc-body">
       ${(() => { const eqc = equipeOf(reg); return `<label for="g-eq">Mon équipe<select id="g-eq">${Object.keys(CENTRE.equipes).map(k => `<option value="${k}"${eqc === k ? " selected" : ""}>Équipe ${k} · ${esc(CENTRE.nom)}</option>`).join("")}<option value=""${eqc ? "" : " selected"}>Autre centre (réglage à la main)</option></select></label>`; })()}
       <span style="font-size:14px">${esc(cap(gardeDesc(reg.garde)))}.</span>
       <div class="gm-list">${(reg.garde.modele || []).map((p, i) => `<div class="gm-row">
@@ -1056,8 +1079,8 @@ function settingsView(week, reg){
         return `<label class="chk" for="gf-on"><input type="checkbox" id="gf-on"${on ? " checked" : ""}> Je suis aussi de garde la journée des jours fériés</label>
         ${on ? `<div class="hr-row"><span class="hr-l">Fériés</span><select id="gf-s" aria-label="Fériés : de">${hourSelOpts(fs)}</select><span class="gm-l">→</span><select id="gf-e" aria-label="Fériés : à">${hourSelOpts(fe)}</select></div>` : ""}`; })()}
       <span class="item-sub">Les changements de plages s'appliquent à ta garde en cours et aux suivantes.</span>
-    </div>
-    <div class="set"><h3>Mon cycle de travail</h3>
+    </div></details>
+    <details class="set acc" data-acc="Mon cycle de travail"${accOpen("Mon cycle de travail")}><summary>Mon cycle de travail</summary><div class="acc-body">
       <label class="chk" for="c-actif"><input type="checkbox" id="c-actif" data-rf="cycle.actif"${c.actif !== false ? " checked" : ""}> J'ai un cycle de travail qui se répète</label>
       ${c.actif !== false ? `<div class="grid2">
         <label for="cy-len">Le cycle dure<select id="cy-len">${numOpts(range(1, 70), (c.motif || "").length || 7, " jours")}</select></label>
@@ -1071,29 +1094,29 @@ function settingsView(week, reg){
         <label for="c-nf">Après une nuit, si le lendemain est un samedi, un dimanche ou un férié, dispo dès<select id="c-nf" data-rf="cycle.finNuitFerie"><option value=""${c.finNuitFerie ? "" : " selected"}>Pas de règle</option>${c.finNuitFerie ? hourSelOpts(c.finNuitFerie) : hourSelOpts("").replace(' selected', '')}</select></label>
         <label for="c-tr">Marge en plus, avant et après<select id="c-tr" data-rf="cycle.trajetMin" data-num="1">${numOpts([0, 15, 30, 45, 60, 90, 120], Number(c.trajetMin) || 0, " min")}</select></label>
       </div>` : `<span class="muted" style="font-size:14px">Sans cycle, note tes indispos dans « Mes indispos hors travail ».</span>`}
-    </div>
-    <div class="set"><h3>Collègues</h3>
+    </div></details>
+    <details class="set acc" data-acc="Collègues"${accOpen("Collègues")}><summary>Collègues</summary><div class="acc-body">
       ${ct || `<span class="muted" style="font-size:14px">Aucun collègue enregistré.</span>`}
       <div class="grid2"><label for="ct-nom">Prénom / nom<input type="text" id="ct-nom" autocomplete="off"></label><label for="ct-tel">Téléphone (facultatif)<input type="text" id="ct-tel" inputmode="tel" autocomplete="off"></label></div>
       <div class="actions"><button type="button" class="btn small" data-act="add-contact">Ajouter</button></div>
-    </div>
-    <div class="set"><h3>Signature des messages</h3>
+    </div></details>
+    <details class="set acc" data-acc="Signature des messages"${accOpen("Signature des messages")}><summary>Signature des messages</summary><div class="acc-body">
       <div class="grid2"><label for="r-sig">Signature<input type="text" id="r-sig" data-rf="signature" value="${esc(reg.signature)}"></label><label for="r-nom">Nom complet<input type="text" id="r-nom" data-rf="nom" value="${esc(reg.nom)}"></label>
         <label for="r-chef">Chef de garde (prénom)<input type="text" id="r-chef" data-rf="chef" value="${esc(reg.chef || "")}" placeholder="Laisse vide pour « Bonjour, »"></label></div>
-    </div>
-    <div class="set"><h3>Sauvegarde</h3>
+    </div></details>
+    <details class="set acc" data-acc="Sauvegarde"${accOpen("Sauvegarde")}><summary>Sauvegarde</summary><div class="acc-body">
       <span style="font-size:14px">Tout est enregistré sur ce téléphone, dans ce navigateur. Fais une sauvegarde de temps en temps : elle sert aussi à envoyer ton planning à Claude ou à le passer sur un autre téléphone.</span>
       <span class="item-sub">${reg.derniereSauvegarde ? `Dernière sauvegarde : ${esc(fmtMaj(reg.derniereSauvegarde))}.` : "Aucune sauvegarde pour l'instant."}</span>
       <div class="actions"><button type="button" class="btn small" data-act="bk-dl">Enregistrer ou envoyer la sauvegarde</button><button type="button" class="btn small" data-act="bk-copy">Copier la sauvegarde</button></div>
       ${restoreBlock()}
-    </div>
-    <div class="set"><h3>Appli</h3>
+    </div></details>
+    <details class="set acc" data-acc="Appli"${accOpen("Appli")}><summary>Appli</summary><div class="acc-body">
       <span style="font-size:14px">Version du ${esc(APP_VERSION)}.</span>
       <div class="actions"><button type="button" class="btn small" data-act="app-update">Chercher une mise à jour</button></div>
-    </div>
-    <div class="set"><h3>Cette semaine</h3>
+    </div></details>
+    <details class="set acc" data-acc="Cette semaine"${accOpen("Cette semaine")}><summary>Cette semaine</summary><div class="acc-body">
       <div class="actions">${delConf ? `<button type="button" class="btn small danger" data-act="del-week-ok">Supprimer définitivement</button><button type="button" class="btn small ghost" data-act="unconfirm">Annuler</button>` : `<button type="button" class="btn small danger" data-act="confirm" data-v="w:${esc(week.id)}">Supprimer cette semaine</button>`}</div>
-    </div>
+    </div></details>
   </details>`;
 }
 
@@ -1273,6 +1296,41 @@ function createWeek(day){
   render(); toast("Semaine préparée");
 }
 
+const VIEWS = [
+  { id: "garde", label: "Garde", icon: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>' },
+  { id: "messages", label: "Messages", icon: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>' },
+  { id: "reponses", label: "Réponses", icon: '<path d="M4 13l3-8h10l3 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5"/>' },
+  { id: "dispos", label: "Dispos", icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
+  { id: "reglages", label: "Réglages", icon: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
+];
+function goTab(view, anchor, block){
+  S.ui.view = view; render();
+  requestAnimationFrame(() => {
+    const el = anchor && document.getElementById(anchor);
+    if(el) el.scrollIntoView({ behavior: "auto", block: block || "start" }); else window.scrollTo(0, 0);
+  });
+}
+function renderTabbar(show, week, m, reg){
+  const bar = $("#tabbar"); if(!bar) return;
+  bar.hidden = !show; document.body.classList.toggle("has-tabs", !!show);
+  if(!show) return;
+  const cur = S.ui.view || "garde";
+  const badge = {};
+  if(m && m.libres.length) badge.garde = m.libres.length;
+  const rl = week ? aRelancer(week).length : 0; if(rl) badge.reponses = rl;
+  if(week && m && parseLocal(week.fin) >= parseLocal(nowLocal())){
+    const sa = week.saisies || [], n = consoleDays(m).filter(x => x.ranges.length && !sa.includes(x.sig)).length;
+    if(n) badge.dispos = n;
+  }
+  const dot = { reglages: !!backupDue(reg) };
+  bar.innerHTML = `<div class="tabbar-in">${VIEWS.map(v => `<button type="button" class="tb${cur === v.id ? " on" : ""}" data-view="${v.id}"${cur === v.id ? ' aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true">${v.icon}</svg><span>${v.label}</span>${badge[v.id] ? `<span class="tb-badge">${badge[v.id]}</span>` : dot[v.id] ? `<span class="tb-dot"></span>` : ""}</button>`).join("")}</div>`;
+}
+document.addEventListener("toggle", e => {
+  const d = e.target; if(!d || !d.classList || !d.classList.contains("acc")) return;
+  S.ui.acc = { ...(S.ui.acc || {}), [d.dataset.acc]: d.open };
+}, true);
+$("#tabbar").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if(b) goTab(b.dataset.view); });
+
 let pendingRender = false;
 function requestRender(){
   const a = document.activeElement;
@@ -1291,9 +1349,11 @@ function render(){
   }
   if(!S.weeksLoaded){ app.innerHTML = `<div class="loading">Chargement du planning…</div>${S.notice ? `<div class="notice">${esc(S.notice)}</div>` : ""}`; return; }
   const reg = currentReg(), week = activeWeek();
-  let html = (S.notice ? `<div class="notice">${esc(S.notice)}</div>` : "") + installCard() + backupBanner(reg);
+  let html = (S.notice ? `<div class="notice">${esc(S.notice)}</div>` : "");
   if(S.ui.newWeek) html += newWeekView();
   if(!week){
+    renderTabbar(false); document.body.className = "";
+    html = installCard() + html;
     if(!S.ui.newWeek){
       const vide = !S.weeks.length && !S.reg;
       html += vide
@@ -1307,11 +1367,22 @@ function render(){
   if(week.exemple) html += `<div class="banner"><b>Semaine d'exemple</b><span>Les collègues et les réponses sont fictifs, pour montrer le fonctionnement. Donne ta vraie semaine de garde à Claude ou crée-la avec « Nouvelle semaine ».</span></div>`;
   const m = compute(week, reg);
   if(!m){
-    html += `<div class="notice"><b>Période invalide.</b> La fin doit être après le début (31 jours maximum). Corrige-la dans les réglages.</div>` + settingsView(week, reg);
-    app.innerHTML = html; bindAfter(); return;
+    S.ui.settingsOpen = true;
+    html += `<div class="notice"><b>Période invalide.</b> La fin doit être après le début (31 jours maximum). Corrige-la ci-dessous.</div>` + settingsView(week, reg);
+    renderTabbar(false); app.innerHTML = html; bindAfter(); return;
   }
-  html += summaryView(m, week) + rpView(week, m, reg) + boardView(m, reg) + consoleView(week, m) + ajView(week, m) + gapsView(m, week) + messagesView(m, week, reg) + suiviView(week) + settingsView(week, reg) + aideView();
-  html += `<p class="tip">Cette appli marche sans Internet : tout reste sur ce téléphone. Pour que Claude mette à jour ton planning, envoie-lui une sauvegarde (Réglages › Sauvegarde). Version du ${esc(APP_VERSION)}.</p>`;
+  const view = S.ui.view || "garde";
+  document.body.className = "has-tabs view-" + view;
+  renderTabbar(true, week, m, reg);
+  if(view === "garde") html += installCard() + backupBanner(reg) + summaryView(m, week) + boardView(m, reg) + gapsView(m, week);
+  else if(view === "messages") html += messagesView(m, week, reg);
+  else if(view === "reponses") html += rpView(week, m, reg) + suiviView(week);
+  else if(view === "dispos") html += ajView(week, m) + consoleView(week, m);
+  else {
+    S.ui.settingsOpen = true;
+    html += `<h2 class="view-title">Réglages</h2>` + backupBanner(reg) + settingsView(week, reg) + aideView()
+      + `<p class="tip">Cette appli marche sans Internet : tout reste sur ce téléphone. Pour que Claude mette à jour ton planning, envoie-lui une sauvegarde (Réglages › Sauvegarde). Version du ${esc(APP_VERSION)}.</p>`;
+  }
   app.innerHTML = html;
   bindAfter();
 }
@@ -1482,18 +1553,18 @@ $("#app").addEventListener("click", e => {
       S.ui.part = null; S.ui.rp = null; S.ui.tab = "relance"; S.ui.dest = "";
       S.ui.rpDone = { nom: r0.nom, statut: encore ? "oui" : "non", titre: `${prenom(r0.nom)} ne fait plus ${fmtSlot(libere)} : ce créneau est de nouveau à couvrir.`, chef: m2 ? chefRetraitMsg(week, m2, reg, r0.nom, libere) : "" };
       render(); toast("Partie retirée du planning");
-      { const sec = document.getElementById("rp-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); }
+      goTab("reponses", "rp-sec");
       break;
     }
     case "rp-relance": {
       S.ui.tab = "relance"; S.ui.dest = ""; render();
-      const sec = document.getElementById("msg-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      goTab("messages", "msg-sec");
       break;
     }
     case "rp-merci": {
       const d = S.ui.rpDone; if(!d) return;
       S.ui.tab = "merci"; S.ui.dest = d.nom; render();
-      const sec = document.getElementById("msg-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      goTab("messages", "msg-sec");
       break;
     }
     case "su-garde": S.ui.su.garde = b.dataset.v; render(); break;
@@ -1519,7 +1590,8 @@ $("#app").addEventListener("click", e => {
       if(day) createWeek(day); else render();
       if(reglerGarde || reglerCycle){
         S.ui.settingsOpen = true; render();
-        setTimeout(() => { const el = $("#reg-det"); if(el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); }, 60);
+        S.ui.acc = { ...(S.ui.acc || {}), [reglerGarde ? "Mes plages de garde" : "Mon cycle de travail"]: true };
+        goTab("reglages", "reg-det");
         toast(reglerGarde ? "Règle maintenant tes plages de garde" : "Règle maintenant ton cycle de travail");
       }
       break;
@@ -1568,15 +1640,14 @@ $("#app").addEventListener("click", e => {
     case "bk-copy": copyText(JSON.stringify(backupObj()), "Sauvegarde copiée", markBackup); break;
     case "bk-later": saveReg({ rappelSauvegardeLe: nowLocal() }); render(); toast("Je te le rappellerai dans une semaine"); break;
     case "aide-open": {
-      S.ui.aideOpen = true; render();
-      const el = document.getElementById("aide-" + b.dataset.v) || $("#aide-det");
-      if(el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      S.ui.aideOpen = true;
+      goTab("reglages", "aide-" + b.dataset.v);
       break;
     }
-    case "goto-rep": { const el = $("#rep-sec"); if(el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); break; }
+    case "goto-rep": goTab("reponses", "rep-sec"); break;
     case "relancer": {
       S.ui.tab = "relance"; S.ui.dest = b.dataset.v; render();
-      const sec = document.getElementById("msg-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      goTab("messages", "msg-sec");
       toast(`Copie la relance pour ${prenom(b.dataset.v)}`);
       break;
     }
@@ -1622,7 +1693,7 @@ $("#app").addEventListener("click", e => {
       const m2 = compute({ ...week, remplacements: rempl }, reg);
       S.ui.rp = null; S.ui.rpDone = { nom: r0.nom, statut: "oui", chef: m2 ? chefMsg(week, m2, reg, r0.nom, [slotOf(r0)]) : "" };
       render(); toast(`${prenom(r0.nom)} confirmé`);
-      { const sec = document.getElementById("rp-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); }
+      goTab("reponses", "rp-sec");
       break;
     }
     case "prov-rm": saveWeek(week.id, { remplacements: (week.remplacements || []).filter(r => r.id !== b.dataset.id) }); toast("Retiré du planning"); break;
