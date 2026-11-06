@@ -243,7 +243,7 @@ button.p-relance{padding:4px 8px;border-radius:99px}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "6 nov. 2026 (n°7)";
+const APP_VERSION = "6 nov. 2026 (n°8)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -779,9 +779,16 @@ function ensureContact(nom){
 function weekLabel(w){
   const s = new Date(parseLocal(w.debut) * 60000), e = new Date((parseLocal(w.fin) - 1) * 60000);
   const sameM = s.getUTCMonth() === e.getUTCMonth();
-  return `${s.getUTCDate()}${sameM ? "" : " " + MOIS[s.getUTCMonth()]} → ${e.getUTCDate()} ${MOIS[e.getUTCMonth()]} ${e.getUTCFullYear()}${w.exemple ? " · exemple" : ""}`;
+  return `${dn(s.getUTCDate())}${sameM ? "" : " " + MOIS[s.getUTCMonth()]} → ${dn(e.getUTCDate())} ${MOIS[e.getUTCMonth()]} ${e.getUTCFullYear()}${w.exemple ? " · exemple" : ""}`;
+}
+function renderEyebrow(){
+  const el = $(".eyebrow"); if(!el) return;
+  const eq = S.reg ? equipeOf(currentReg()) : "";
+  el.textContent = eq ? `Équipe ${eq} · ${CENTRE.nom}` : "Semaine de garde · hors ligne";
 }
 function renderWeekBar(){
+  renderEyebrow();
+  const wb = $(".weekbar"); if(wb) wb.hidden = S.weeksLoaded && !S.weeks.length && !S.reg;
   const sel = $("#weekSel"), w = activeWeek();
   const sorted = [...S.weeks].sort(byDebut);
   const reg = currentReg(), today = dayNum(nowLocal());
@@ -1032,6 +1039,7 @@ function settingsView(week, reg){
       <div class="actions"><button type="button" class="btn small" data-act="regen">Recalculer depuis le modèle</button></div>
     </div>
     <div class="set"><h3>Mes plages de garde</h3>
+      ${(() => { const eqc = equipeOf(reg); return `<label for="g-eq">Mon équipe<select id="g-eq">${Object.keys(CENTRE.equipes).map(k => `<option value="${k}"${eqc === k ? " selected" : ""}>Équipe ${k} · ${esc(CENTRE.nom)}</option>`).join("")}<option value=""${eqc ? "" : " selected"}>Autre centre (réglage à la main)</option></select></label>`; })()}
       <span style="font-size:14px">${esc(cap(gardeDesc(reg.garde)))}.</span>
       <div class="gm-list">${(reg.garde.modele || []).map((p, i) => `<div class="gm-row">
         <span class="gm-l">Du</span><select id="gm-${i}-j" data-gm="${i}.j" aria-label="Jour de début">${gmOpts(reg.garde, p.j)}</select><select id="gm-${i}-de" data-gm="${i}.de" aria-label="Heure de début">${hourSelOpts(p.de)}</select>
@@ -1133,19 +1141,40 @@ function saveModele(mo){
   saveReg({ garde: g }); recalcWeeks(currentReg()); render();
 }
 function nextFriday(){ const t = dayNum(nowLocal()); return dayStr(t + ((5 - new Date(t * 86400000).getUTCDay() + 7) % 7)); }
+// Équipes du centre : chacune prend la garde une semaine sur quatre, le vendredi à 19h (A → B → C → D).
+const CENTRE = { nom: "CIS Montivilliers", semaines: 4, ferie: "07:00-19:00", equipes: { A: "2026-11-06", B: "2026-11-13", C: "2026-11-20", D: "2026-11-27" } };
+function gardeEquipe(eq){ return { ...clone(DEFAULT_REG.garde), ancre: CENTRE.equipes[eq], semaines: CENTRE.semaines, modele: clone(GARDE_PRESETS.we.modele), ferie: CENTRE.ferie }; }
+function equipeOf(reg){
+  if(reg.equipe === "") return "";
+  if(reg.equipe && CENTRE.equipes[reg.equipe]) return reg.equipe;
+  const g = reg.garde || {};
+  if(!g.ancre || isNaN(dayNum(g.ancre)) || Number(g.semaines) !== CENTRE.semaines) return "";
+  for(const [k, d] of Object.entries(CENTRE.equipes)) if((dayNum(g.ancre) - dayNum(d)) % (CENTRE.semaines * 7) === 0) return k;
+  return "";
+}
+function prochaineGarde(g){ return gardeDays({ garde: g }, dayNum(nowLocal()) - 6, 1)[0]; }
 function setupView(){
-  const su = S.ui.su || (S.ui.su = { garde: "we", travail: "aucun", nom: "", anc: nextFriday(), sem: 4 });
-  const preset = GARDE_PRESETS[su.garde];
-  const gDesc = preset ? cap(gardeDesc({ ...DEFAULT_REG.garde, ancre: su.anc, modele: preset.modele })) + "." : "Tu régleras tes plages exactes dans Réglages › Mes plages de garde.";
+  const su = S.ui.su || (S.ui.su = { equipe: null, garde: "we", travail: "aucun", nom: "", anc: nextFriday(), sem: 4 });
   const chip = (act, v, lab, on) => `<button type="button" class="chip${on ? " on" : ""}" role="radio" aria-checked="${on}" data-act="${act}" data-v="${v}">${esc(lab)}</button>`;
+  const eq = su.equipe;
+  let gardeBlock = "";
+  if(eq && eq !== "autre"){
+    const g = gardeEquipe(eq), d = prochaineGarde(g);
+    gardeBlock = `<p class="item-sub" style="margin:0">${esc(cap(gardeDesc(g)))}. Une semaine sur quatre.${d ? ` Ta prochaine garde commence le <b>${esc(fmtDay(dayNum(d) * CPD, true))}</b> à 19h.` : ""}</p>`;
+  } else if(eq === "autre"){
+    const preset = GARDE_PRESETS[su.garde];
+    const gDesc = preset ? cap(gardeDesc({ ...DEFAULT_REG.garde, ancre: su.anc, modele: preset.modele })) + "." : "Tu régleras tes plages exactes dans Réglages › Mes plages de garde.";
+    gardeBlock = `<div class="chips" role="radiogroup" aria-label="Rythme de garde">${Object.entries(GARDE_PRESETS).map(([k, v]) => chip("su-garde", k, v.label, su.garde === k)).join("")}${chip("su-garde", "perso", "Autre (je règle après)", su.garde === "perso")}</div>
+      <p class="item-sub" style="margin:0">${esc(gDesc)}</p>
+      <div class="grid2"><label for="su-anc">Ta prochaine garde commence le<input type="date" id="su-anc" value="${esc(su.anc)}"></label><label for="su-sem">Elle revient toutes les<select id="su-sem">${numOpts(range(1, 12), su.sem, " sem.")}</select></label></div>`;
+  }
   return `<section class="panel sec set" aria-label="Configuration">
       <h2>Bienvenue</h2>
       <p class="muted" style="margin:0">Cette appli calcule les créneaux de ta semaine de garde à faire remplacer, prépare tes messages et suit les réponses. Tout reste sur ton téléphone, même sans réseau.</p>
+      <h3>Ton équipe · ${esc(CENTRE.nom)}</h3>
+      <div class="chips" role="radiogroup" aria-label="Équipe">${Object.keys(CENTRE.equipes).map(k => chip("su-eq", k, "Équipe " + k, eq === k)).join("")}${chip("su-eq", "autre", "Autre centre", eq === "autre")}</div>
+      ${gardeBlock || `<p class="item-sub" style="margin:0">Choisis ton équipe : tes semaines de garde se calculent toutes seules.</p>`}
       <label for="su-nom">Ton prénom<input type="text" id="su-nom" autocomplete="given-name" placeholder="Pour signer tes messages" value="${esc(su.nom)}"></label>
-      <h3>Ta garde</h3>
-      <div class="chips" role="radiogroup" aria-label="Rythme de garde">${Object.entries(GARDE_PRESETS).map(([k, v]) => chip("su-garde", k, v.label, su.garde === k)).join("")}${chip("su-garde", "perso", "Autre (je règle après)", su.garde === "perso")}</div>
-      <p class="item-sub" style="margin:0">${esc(gDesc)}</p>
-      <div class="grid2"><label for="su-anc">Ta prochaine garde commence le<input type="date" id="su-anc" value="${esc(su.anc)}"></label><label for="su-sem">Elle revient toutes les<select id="su-sem">${numOpts(range(1, 12), su.sem, " sem.")}</select></label></div>
       <h3>Ton travail</h3>
       <div class="chips" role="radiogroup" aria-label="Travail">${chip("su-travail", "aucun", "Pas de cycle", su.travail === "aucun")}${chip("su-travail", "cycle", "Un cycle qui se répète", su.travail === "cycle")}</div>
       <p class="item-sub" style="margin:0">${su.travail === "cycle" ? "Tu régleras ton cycle (matin, après-midi, nuit, repos…) juste après, dans Réglages › Mon cycle de travail." : "Tu noteras tes indispos à la main pour chaque garde."}</p>
@@ -1468,20 +1497,24 @@ $("#app").addEventListener("click", e => {
       break;
     }
     case "su-garde": S.ui.su.garde = b.dataset.v; render(); break;
+    case "su-eq": S.ui.su.equipe = b.dataset.v; render(); break;
     case "su-travail": S.ui.su.travail = b.dataset.v; render(); break;
     case "su-ok": {
       const su = S.ui.su; if(!su) return;
-      if(!su.anc || isNaN(dayNum(su.anc))){ toast("Indique quand commence ta prochaine garde"); return; }
+      if(!su.equipe){ toast("Choisis ton équipe"); return; }
+      const parEquipe = su.equipe !== "autre";
+      if(!parEquipe && (!su.anc || isNaN(dayNum(su.anc)))){ toast("Indique quand commence ta prochaine garde"); return; }
       const base = clone(DEFAULT_REG), nom = (su.nom || "").trim();
       const preset = GARDE_PRESETS[su.garde] || GARDE_PRESETS.we;
       const regNew = { ...base, nom, signature: nom, creeLe: nowLocal(),
-        garde: { ...base.garde, ancre: su.anc, semaines: Math.min(12, Math.max(1, Number(su.sem) || 4)), modele: clone(preset.modele) },
+        equipe: parEquipe ? su.equipe : "",
+        garde: parEquipe ? gardeEquipe(su.equipe) : { ...base.garde, ancre: su.anc, semaines: Math.min(12, Math.max(1, Number(su.sem) || 4)), modele: clone(preset.modele) },
         cycle: { ...base.cycle, actif: su.travail === "cycle", ancre: su.travail === "cycle" ? dayStr(dayNum(nowLocal())) : "" } };
       S.reg = regNew;
       q(() => S.db.doc("reglages/general").set(regNew));
       const today = dayNum(nowLocal()), now = parseLocal(nowLocal());
       const day = gardeDays(regNew, today - 13, 4).find(d => { const per = periodsFor(d, regNew); return per.length && Math.max(...per.map(p => parseLocal(p.fin))) >= now; });
-      const reglerGarde = su.garde === "perso", reglerCycle = su.travail === "cycle";
+      const reglerGarde = !parEquipe && su.garde === "perso", reglerCycle = su.travail === "cycle";
       S.ui.su = null;
       if(day) createWeek(day); else render();
       if(reglerGarde || reglerCycle){
@@ -1673,6 +1706,16 @@ $("#app").addEventListener("change", e => {
     const c = clone(currentReg().cycle), L = Math.min(70, Math.max(1, Math.round(Number(t.value) || 7)));
     c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
   }
+  if(t.id === "g-eq"){
+    const v = t.value;
+    if(!v){ saveReg({ equipe: "" }); render(); toast("Règle tes plages de garde à la main ci-dessous"); return; }
+    const g = gardeEquipe(v);
+    saveReg({ equipe: v, garde: g }); recalcWeeks(currentReg());
+    const d = prochaineGarde(g);
+    if(d && !S.weeks.some(w => w.id === d)) createWeek(d); else { if(d) S.activeId = d; render(); }
+    if(d) toast(`Équipe ${v} : prochaine garde le ${fmtDay(dayNum(d) * CPD, true)}`);
+    return;
+  }
   if(t.dataset.cy !== undefined){
     const c = clone(currentReg().cycle), motif = (c.motif || "RRRRRRR").split("");
     motif[Number(t.dataset.cy)] = t.value; c.motif = motif.join(""); saveReg({ cycle: c }); render(); return;
@@ -1712,6 +1755,7 @@ $("#app").addEventListener("change", e => {
     }
     saveReg(reg);
     if(t.dataset.rf === "garde.ferie") recalcWeeks(currentReg());
+    if(t.dataset.rf === "garde.ancre" || t.dataset.rf === "garde.semaines") saveReg({ equipe: "" });
     render();
   }
 });
