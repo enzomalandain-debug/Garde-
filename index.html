@@ -173,11 +173,24 @@ details.panel[open] > summary::after{content:"–"}
 .set{display:flex;flex-direction:column;gap:12px;margin-top:16px}
 .set + .set{border-top:1px solid var(--line);padding-top:16px}
 .set h3{font:600 13px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
 .mini{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;padding:8px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
 .mini:last-child{border-bottom:0}
 .sel{user-select:all}
 .sec.set{margin:0}
+.gm-list{display:flex;flex-direction:column;gap:8px}
+.gm-row{display:grid;grid-template-columns:24px minmax(0,1fr) 96px 34px;gap:6px 8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px}
+.gm-row select,.gm-row input{width:100%;min-width:0;font-size:15px}
+.gm-l{font-size:13px;color:var(--muted)}
+.cy-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cy{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer;min-width:0}
+.cy small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.cy b{font:700 17px/1 var(--display)}
+.cy.c-M,.cy.c-A,.cy.c-J{background:var(--dispo);color:var(--on-dispo);border-color:transparent}
+.cy.c-M small,.cy.c-A small,.cy.c-J small{color:var(--on-dispo)}
+.cy.c-N{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.cy.c-N small{color:var(--on-accent)}
+.cy.c-R b{color:var(--muted)}
 .set textarea{width:100%;resize:vertical;font-size:13px;color:var(--ink)}
 
 .banner{display:flex;flex-direction:column;gap:4px;border:1px dashed var(--wait);border-radius:10px;padding:12px 14px;font-size:14px;background:var(--wait-soft)}
@@ -215,21 +228,25 @@ details.panel[open] > summary::after{content:"–"}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
+const GARDE_PRESETS = {
+  we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
+  h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
+  nuits: { label: "7 nuits (19h → 7h)", modele: [0, 1, 2, 3, 4, 5, 6].map(k => ({ j: k, de: "19:00", aj: k + 1, a: "07:00" })) }
+};
 const DEFAULT_REG = {
   nom: "",
   signature: "",
   chef: "",
   cycle: {
-    actif: true, ancre: "2026-10-31", motif: PAT_DEFAULT,
-    horaires: { M: "02:00-14:30", A: "11:00-22:30", N: "19:00-19:00", J: "07:30-16:30" },
-    finNuitFerie: "11:00",
+    actif: false, ancre: "", motif: "RRRRRRR",
+    horaires: { M: "05:00-13:00", A: "13:00-21:00", N: "21:00-05:00", J: "08:00-17:00" },
+    finNuitFerie: "",
     trajetMin: 0
   },
   garde: {
-    ancre: "2026-11-06", semaines: 4,
-    modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ],
-    ferie: "07:00-19:00",
-    description: "Du vendredi 19h au lundi 7h, puis les nuits du lundi au jeudi (19h → 7h), plus la journée des jours fériés"
+    ancre: "", semaines: 4,
+    modele: GARDE_PRESETS.we.modele,
+    ferie: "07:00-19:00"
   },
   contacts: [],
   semaineActive: null
@@ -275,7 +292,8 @@ function ferie(d){ return feries(new Date(d * 86400000).getUTCFullYear()).get(d)
 function cycleCode(d, reg){
   const c = reg.cycle || {};
   if(c.actif === false || !c.ancre) return "";
-  const motif = c.motif || PAT_DEFAULT;
+  const motif = c.motif || "";
+  if(!motif.length) return "";
   const i = (((d - dayNum(c.ancre)) % motif.length) + motif.length) % motif.length;
   return motif[i];
 }
@@ -295,10 +313,24 @@ function periodsFor(day, reg){
   return per.sort((a, b) => parseLocal(a.debut) - parseLocal(b.debut));
 }
 function gardeDays(reg, fromDay, n){
-  const g = reg.garde || DEFAULT_REG.garde, a = dayNum(g.ancre), step = (Number(g.semaines) || 4) * 7;
+  const g = reg.garde || DEFAULT_REG.garde;
+  if(!g.ancre || isNaN(dayNum(g.ancre))) return [];
+  const a = dayNum(g.ancre), step = (Number(g.semaines) || 4) * 7;
   const k = Math.max(0, Math.ceil((fromDay - a) / step)), out = [];
   for(let i = 0; i < n; i++) out.push(dayStr(a + (k + i) * step));
   return out;
+}
+function cap(t){ t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
+function fmtHM(s){ const [h, m = 0] = String(s).split(":").map(Number); return h + "h" + (m ? String(m).padStart(2, "0") : ""); }
+function gardeJour(g, k){
+  if(!g.ancre || isNaN(dayNum(g.ancre))) return `jour ${k + 1}`;
+  return JOURS_L[(new Date(dayNum(g.ancre) * 86400000).getUTCDay() + k) % 7] + (k >= 7 ? " suivant" : "");
+}
+function gardeDesc(g){
+  const mo = (g && g.modele) || [];
+  if(!mo.length) return "aucune plage de garde";
+  const t = mo.map(p => `${gardeJour(g, p.j)} ${fmtHM(p.de)} → ${gardeJour(g, p.aj)} ${fmtHM(p.a)}`).join(", ");
+  return t + (g.ferie && RX_PLAGE.test(g.ferie) ? `, plus la journée des jours fériés (${g.ferie.split("-").map(fmtHM).join(" → ")})` : "");
 }
 
 function compute(week, reg){
@@ -777,7 +809,7 @@ function boardView(m, reg){
     rows += `<div class="row"><div class="rlab"><span class="rday${fer ? " rfer" : ""}"${fer ? ` title="Férié : ${esc(fer)}"` : ""}>${JOURS[date.getUTCDay()].replace(".", "")}</span><span class="rnum tnum">${date.getUTCDate()}</span>${code ? `<span class="rcode" title="${esc(POSTE[code] || code)}">${esc(code)}</span>` : ""}</div><div class="bar">${segHtml}</div></div>`;
   }
   const cyc = reg.cycle;
-  const legendCycle = cyc.actif !== false ? `<span>M · A · N · J · R = ton poste raffinerie du jour${cyc.trajetMin ? `, trajet de ${esc(cyc.trajetMin)} min compris` : ""}</span>` : "";
+  const legendCycle = cyc.actif !== false ? `<span>M · A · N · J · R = ton poste du jour (cycle de travail)${cyc.trajetMin ? `, trajet de ${esc(cyc.trajetMin)} min compris` : ""}</span>` : "";
   return `<section class="sec"><h2>Tableau de garde</h2>
     <div class="panel board">${rows}
       <div class="legend"><span><b style="background:var(--gap)"></b>À couvrir</span><span><b style="background:var(--cover)"></b>Remplacé</span><span><b class="s-prov"></b>En attente de validation</span><span><b style="background:var(--dispo)"></b>Moi, dispo</span><span><b class="s-hors" style="border:1px solid var(--line)"></b>Hors garde (journée selon les dispos de chacun)</span><span><u class="rfer">Jour souligné</u> = férié</span>${legendCycle}</div>
@@ -852,7 +884,7 @@ function ajView(week, m){
       <div class="actions"><button type="button" class="btn primary" data-act="add-aj">Ajouter</button><button type="button" class="btn ghost" data-act="aj-cancel">Annuler</button></div>
     </div></div>` : `<div class="addrow"><button type="button" class="btn small" data-act="aj-open"${ro}>Ajouter une indispo</button></div>`;
   return `<section class="sec"><h2>Mes indispos hors travail</h2>
-    <div class="panel list">${rows || `<div class="item"><span class="muted">Aucune pour cette garde. Tes postes à la raffinerie sont déjà comptés tout seuls.</span></div>`}${form}</div>
+    <div class="panel list">${rows || `<div class="item"><span class="muted">Aucune pour cette garde.${currentReg().cycle.actif !== false ? " Les postes de ton cycle de travail sont déjà comptés tout seuls." : ""}</span></div>`}${form}</div>
   </section>`;
 }
 
@@ -951,26 +983,39 @@ function settingsView(week, reg){
       ${periodesOf(week).map(p => `<div class="mini"><span class="tnum">${esc(fmtSlot({ s: hFloor(p.debut), e: hCeil(p.fin) }))}</span></div>`).join("")}
       <div class="actions"><button type="button" class="btn small" data-act="regen">Recalculer depuis le modèle</button></div>
     </div>
-    <div class="set"><h3>Modèle de garde pompiers</h3>
-      <span style="font-size:14px">${esc(reg.garde.description || "")}.</span>
+    <div class="set"><h3>Mes plages de garde</h3>
+      <span style="font-size:14px">${esc(cap(gardeDesc(reg.garde)))}.</span>
+      <div class="gm-list">${(reg.garde.modele || []).map((p, i) => `<div class="gm-row">
+        <span class="gm-l">Du</span><select id="gm-${i}-j" data-gm="${i}.j" aria-label="Jour de début">${gmOpts(reg.garde, p.j)}</select><input type="time" id="gm-${i}-de" data-gm="${i}.de" value="${esc(p.de)}" aria-label="Heure de début">
+        <button type="button" class="chip x" data-act="gm-rm" data-i="${i}" aria-label="Supprimer cette plage">×</button>
+        <span class="gm-l">au</span><select id="gm-${i}-aj" data-gm="${i}.aj" aria-label="Jour de fin">${gmOpts(reg.garde, p.aj)}</select><input type="time" id="gm-${i}-a" data-gm="${i}.a" value="${esc(p.a)}" aria-label="Heure de fin"><span></span>
+      </div>`).join("") || `<span class="muted" style="font-size:14px">Aucune plage : ajoute-en une ou choisis un modèle.</span>`}</div>
+      <div class="actions"><button type="button" class="btn small" data-act="gm-add">Ajouter une plage</button></div>
+      <div class="sugg"><span>Modèles tout prêts :</span>${Object.entries(GARDE_PRESETS).map(([k, v]) => `<button type="button" class="chip" data-act="gm-preset" data-v="${k}">${esc(v.label)}</button>`).join("")}</div>
       <div class="grid2">
         <label for="g-anc">Début d'une de mes gardes<input type="date" id="g-anc" data-rf="garde.ancre" value="${esc(reg.garde.ancre)}"></label>
         <label for="g-sem">Revient toutes les (semaines)<input type="number" id="g-sem" min="1" max="12" data-rf="garde.semaines" value="${esc(reg.garde.semaines)}"></label>
         <label for="g-fer">Garde des jours fériés en semaine<input type="text" id="g-fer" data-rf="garde.ferie" value="${esc(reg.garde.ferie || "")}" placeholder="07:00-19:00"></label>
       </div>
+      <span class="item-sub">Les changements de plages s'appliquent à ta garde en cours et aux suivantes.</span>
     </div>
-    <div class="set"><h3>Cycle raffinerie</h3>
-      <label class="chk" for="c-actif"><input type="checkbox" id="c-actif" data-rf="cycle.actif"${c.actif !== false ? " checked" : ""}> Déduire mes indispos de mon cycle de 5 semaines</label>
+    <div class="set"><h3>Mon cycle de travail</h3>
+      <label class="chk" for="c-actif"><input type="checkbox" id="c-actif" data-rf="cycle.actif"${c.actif !== false ? " checked" : ""}> J'ai un cycle de travail qui se répète</label>
+      ${c.actif !== false ? `<div class="grid2">
+        <label for="cy-len">Le cycle dure (jours)<input type="number" id="cy-len" min="1" max="70" value="${(c.motif || "").length || 7}"></label>
+        <label for="c-anc">Le jour 1 du cycle tombe le<input type="date" id="c-anc" data-rf="cycle.ancre" value="${esc(c.ancre)}"></label>
+      </div>
+      <span class="item-sub">Touche un jour pour changer ton poste : R repos → M matin → A après-midi → N nuit → J journée.</span>
+      <div class="cy-grid">${cyCells(c)}</div>
       <span class="muted" style="font-size:14px">Heures où tu ne peux pas assurer la garde selon ton poste, trajet compris. Nuit « 19:00-19:00 » = jusqu'au lendemain 19h.</span>
       <div class="grid2">
-        <label for="c-M">Si du matin<input type="text" id="c-M" data-rf="cycle.horaires.M" value="${esc(c.horaires.M)}" placeholder="02:00-13:30"></label>
+        <label for="c-M">Si du matin<input type="text" id="c-M" data-rf="cycle.horaires.M" value="${esc(c.horaires.M)}" placeholder="05:00-13:00"></label>
         <label for="c-A">Si d'après-midi<input type="text" id="c-A" data-rf="cycle.horaires.A" value="${esc(c.horaires.A)}"></label>
         <label for="c-N">Si de nuit<input type="text" id="c-N" data-rf="cycle.horaires.N" value="${esc(c.horaires.N)}"></label>
         <label for="c-J">Si de journée<input type="text" id="c-J" data-rf="cycle.horaires.J" value="${esc(c.horaires.J)}"></label>
-        <label for="c-nf">Après une nuit, si le lendemain est un samedi, un dimanche ou un férié, dispo à<input type="time" id="c-nf" data-rf="cycle.finNuitFerie" value="${esc(c.finNuitFerie || "")}"></label>
+        <label for="c-nf">Après une nuit, si le lendemain est un samedi, un dimanche ou un férié, dispo à (facultatif)<input type="time" id="c-nf" data-rf="cycle.finNuitFerie" value="${esc(c.finNuitFerie || "")}"></label>
         <label for="c-tr">Marge en plus (min, avant et après)<input type="number" id="c-tr" min="0" max="180" step="5" data-rf="cycle.trajetMin" value="${esc(c.trajetMin)}"></label>
-        <label for="c-anc">1er samedi du matin (semaine 1)<input type="date" id="c-anc" data-rf="cycle.ancre" value="${esc(c.ancre)}"></label>
-      </div>
+      </div>` : `<span class="muted" style="font-size:14px">Sans cycle, note tes indispos dans « Mes indispos hors travail ».</span>`}
     </div>
     <div class="set"><h3>Collègues</h3>
       ${ct || `<span class="muted" style="font-size:14px">Aucun collègue enregistré.</span>`}
@@ -992,6 +1037,54 @@ function settingsView(week, reg){
   </details>`;
 }
 
+function gmOpts(g, sel){
+  let o = "";
+  for(let k = 0; k <= 13; k++) o += `<option value="${k}"${k === Number(sel) ? " selected" : ""}>${esc(cap(gardeJour(g, k)))}</option>`;
+  return o;
+}
+function cyCells(c){
+  const motif = c.motif || "RRRRRRR", a = c.ancre && !isNaN(dayNum(c.ancre)) ? dayNum(c.ancre) : null;
+  let o = "";
+  for(let i = 0; i < motif.length; i++){
+    const code = motif[i], lab = a != null ? JOURS[new Date((a + i) * 86400000).getUTCDay()].replace(".", "") : "J" + (i + 1);
+    o += `<button type="button" class="cy c-${code}" data-act="cy-cell" data-i="${i}" aria-label="Jour ${i + 1} : ${esc(POSTE[code] || code)}"><small>${esc(lab)}</small><b>${esc(code)}</b></button>`;
+  }
+  return o;
+}
+function recalcWeeks(reg){
+  const now = parseLocal(nowLocal());
+  for(const w of S.weeks){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(w.id) || parseLocal(w.fin) < now) continue;
+    const per = periodsFor(w.id, reg); if(!per.length) continue;
+    const fin = per.reduce((m, p) => parseLocal(p.fin) > parseLocal(m) ? p.fin : m, per[0].fin);
+    saveWeek(w.id, { periodes: per, debut: per[0].debut, fin });
+  }
+}
+function saveModele(mo){
+  const g = { ...clone(currentReg().garde), modele: mo };
+  saveReg({ garde: g }); recalcWeeks(currentReg()); render();
+}
+function nextFriday(){ const t = dayNum(nowLocal()); return dayStr(t + ((5 - new Date(t * 86400000).getUTCDay() + 7) % 7)); }
+function setupView(){
+  const su = S.ui.su || (S.ui.su = { garde: "we", travail: "aucun", nom: "", anc: nextFriday(), sem: 4 });
+  const preset = GARDE_PRESETS[su.garde];
+  const gDesc = preset ? cap(gardeDesc({ ...DEFAULT_REG.garde, ancre: su.anc, modele: preset.modele })) + "." : "Tu régleras tes plages exactes dans Réglages › Mes plages de garde.";
+  const chip = (act, v, lab, on) => `<button type="button" class="chip${on ? " on" : ""}" role="radio" aria-checked="${on}" data-act="${act}" data-v="${v}">${esc(lab)}</button>`;
+  return `<section class="panel sec set" aria-label="Configuration">
+      <h2>Bienvenue</h2>
+      <p class="muted" style="margin:0">Cette appli calcule les créneaux de ta semaine de garde à faire remplacer, prépare tes messages et suit les réponses. Tout reste sur ton téléphone, même sans réseau.</p>
+      <label for="su-nom">Ton prénom<input type="text" id="su-nom" autocomplete="given-name" placeholder="Pour signer tes messages" value="${esc(su.nom)}"></label>
+      <h3>Ta garde</h3>
+      <div class="chips" role="radiogroup" aria-label="Rythme de garde">${Object.entries(GARDE_PRESETS).map(([k, v]) => chip("su-garde", k, v.label, su.garde === k)).join("")}${chip("su-garde", "perso", "Autre (je règle après)", su.garde === "perso")}</div>
+      <p class="item-sub" style="margin:0">${esc(gDesc)}</p>
+      <div class="grid2"><label for="su-anc">Ta prochaine garde commence le<input type="date" id="su-anc" value="${esc(su.anc)}"></label><label for="su-sem">Elle revient toutes les (semaines)<input type="number" id="su-sem" min="1" max="12" value="${esc(su.sem)}"></label></div>
+      <h3>Ton travail</h3>
+      <div class="chips" role="radiogroup" aria-label="Travail">${chip("su-travail", "aucun", "Pas de cycle", su.travail === "aucun")}${chip("su-travail", "cycle", "Un cycle qui se répète", su.travail === "cycle")}</div>
+      <p class="item-sub" style="margin:0">${su.travail === "cycle" ? "Tu régleras ton cycle (matin, après-midi, nuit, repos…) juste après, dans Réglages › Mon cycle de travail." : "Tu noteras tes indispos à la main pour chaque garde."}</p>
+      <div class="actions"><button type="button" class="btn primary" data-act="su-ok">Créer mon planning</button></div>
+    </section>
+    <section class="panel sec set" aria-label="Restaurer une sauvegarde"><h2>J'ai déjà une sauvegarde</h2>${restoreBlock()}</section>`;
+}
 function restoreBlock(){
   return `<label for="bk-file">Restaurer depuis un fichier<input type="file" id="bk-file"></label>
       <label for="bk-txt">ou colle le texte d'une sauvegarde<textarea id="bk-txt" rows="3"></textarea></label>
@@ -1001,7 +1094,7 @@ function newWeekView(){
   const reg = currentReg(), today = dayNum(nowLocal());
   const def = gardeDays(reg, today - 6, 8).find(d => !S.weeks.some(x => x.id === d)) || gardeDays(reg, today, 1)[0];
   return `<section class="panel sec" aria-label="Nouvelle semaine"><h2>Nouvelle semaine de garde</h2>
-    <p class="muted" style="margin:0;font-size:14px">${esc(reg.garde.description || "")}. Choisis le jour où la garde commence.</p>
+    <p class="muted" style="margin:0;font-size:14px">${esc(cap(gardeDesc(reg.garde)))}. Choisis le jour où la garde commence.</p>
     <div class="grid2"><label for="nw-day">Début de la garde<input type="date" id="nw-day" value="${esc(def)}"></label></div>
     <div class="actions"><button type="button" class="btn primary" data-act="nw-ok">Créer la semaine</button><button type="button" class="btn ghost" data-act="nw-cancel">Annuler</button></div>
   </section>`;
@@ -1044,7 +1137,7 @@ function render(){
     if(!S.ui.newWeek){
       const vide = !S.weeks.length && !S.reg;
       html += vide
-        ? `<section class="panel sec set"><h2>Bienvenue</h2><p class="muted" style="margin:0">Pour retrouver ton planning, restaure la sauvegarde que Claude t'a donnée. Tes données resteront sur ce téléphone, même sans réseau.</p>${restoreBlock()}<p class="item-sub" style="margin:0">Pas de sauvegarde ? Crée ta prochaine garde avec « Nouvelle semaine ».</p></section>`
+        ? setupView()
         : `<section class="panel sec"><h2>Aucune semaine de garde</h2><p class="muted">Choisis ta prochaine garde dans la liste en haut (rubrique « À préparer »), ou restaure une sauvegarde dans les réglages.</p><div class="actions"><button type="button" class="btn primary" data-act="nw">Nouvelle semaine</button></div></section>`;
     }
     app.innerHTML = html; return;
@@ -1210,6 +1303,44 @@ $("#app").addEventListener("click", e => {
       const sec = document.getElementById("msg-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
       break;
     }
+    case "su-garde": S.ui.su.garde = b.dataset.v; render(); break;
+    case "su-travail": S.ui.su.travail = b.dataset.v; render(); break;
+    case "su-ok": {
+      const su = S.ui.su; if(!su) return;
+      if(!su.anc || isNaN(dayNum(su.anc))){ toast("Indique quand commence ta prochaine garde"); return; }
+      const base = clone(DEFAULT_REG), nom = (su.nom || "").trim();
+      const preset = GARDE_PRESETS[su.garde] || GARDE_PRESETS.we;
+      const regNew = { ...base, nom, signature: nom,
+        garde: { ...base.garde, ancre: su.anc, semaines: Math.min(12, Math.max(1, Number(su.sem) || 4)), modele: clone(preset.modele) },
+        cycle: { ...base.cycle, actif: su.travail === "cycle", ancre: su.travail === "cycle" ? dayStr(dayNum(nowLocal())) : "" } };
+      S.reg = regNew;
+      q(() => S.db.doc("reglages/general").set(regNew));
+      const today = dayNum(nowLocal()), now = parseLocal(nowLocal());
+      const day = gardeDays(regNew, today - 13, 4).find(d => { const per = periodsFor(d, regNew); return per.length && Math.max(...per.map(p => parseLocal(p.fin))) >= now; });
+      const reglerGarde = su.garde === "perso", reglerCycle = su.travail === "cycle";
+      S.ui.su = null;
+      if(day) createWeek(day); else render();
+      if(reglerGarde || reglerCycle){
+        S.ui.settingsOpen = true; render();
+        setTimeout(() => { const el = $("#reg-det"); if(el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); }, 60);
+        toast(reglerGarde ? "Règle maintenant tes plages de garde" : "Règle maintenant ton cycle de travail");
+      }
+      break;
+    }
+    case "gm-add": {
+      const mo = clone(currentReg().garde.modele || []), last = mo[mo.length - 1];
+      const j = last ? Math.min(12, last.aj) : 0;
+      mo.push({ j, de: "19:00", aj: j + 1, a: "07:00" });
+      saveModele(mo); break;
+    }
+    case "gm-rm": { const mo = clone(currentReg().garde.modele || []); mo.splice(Number(b.dataset.i), 1); saveModele(mo); toast("Plage supprimée"); break; }
+    case "gm-preset": { const pr = GARDE_PRESETS[b.dataset.v]; if(pr){ saveModele(clone(pr.modele)); toast(`Modèle « ${pr.label} » appliqué`); } break; }
+    case "cy-cell": {
+      const c = clone(currentReg().cycle), i = Number(b.dataset.i), order = "RMANJ";
+      const motif = (c.motif || "RRRRRRR").split("");
+      motif[i] = order[(order.indexOf(motif[i]) + 1) % order.length] || "R";
+      c.motif = motif.join(""); saveReg({ cycle: c }); render(); break;
+    }
     case "bk-dl": {
       const txt = JSON.stringify(backupObj()), fname = `sauvegarde-garde-${nowLocal().slice(0, 10)}.json`;
       try {
@@ -1344,18 +1475,42 @@ $("#app").addEventListener("change", e => {
       saveWeek(week.id, { plage: `${s}-${en}` }); return;
     }
   }
+  if(t.id === "su-anc"){ if(S.ui.su){ S.ui.su.anc = t.value; render(); } return; }
+  if(t.id === "su-sem"){ if(S.ui.su) S.ui.su.sem = t.value; return; }
+  if(t.id === "cy-len"){
+    const c = clone(currentReg().cycle), L = Math.min(70, Math.max(1, Math.round(Number(t.value) || 7)));
+    c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
+  }
+  if(t.dataset.gm){
+    const [i, f] = t.dataset.gm.split("."), mo = clone(currentReg().garde.modele || []), p = mo[Number(i)];
+    if(!p || !t.value) return;
+    p[f] = (f === "j" || f === "aj") ? Number(t.value) : t.value;
+    const st = p.j * 1440 + hm(p.de), en = () => p.aj * 1440 + hm(p.a);
+    if(en() <= st){
+      if(f === "j" || f === "de"){ p.aj = Math.min(13, p.j + (hm(p.a) <= hm(p.de) ? 1 : 0)); }
+      if(en() <= st){ toast("La fin de la plage doit être après son début"); render(); return; }
+    }
+    saveModele(mo); return;
+  }
   if(t.dataset.rf){
     const path = t.dataset.rf.split("."), reg = clone(currentReg());
     let v = t.type === "checkbox" ? t.checked : t.type === "number" ? Number(t.value) : t.value.trim();
     if(path[1] === "horaires" && !/^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/.test(v)){ toast("Format attendu : 05:00-13:00"); return; }
     let o = reg; for(let i = 0; i < path.length - 1; i++) o = o[path[i]];
     o[path[path.length - 1]] = v;
-    saveReg(reg); render();
+    if(t.dataset.rf === "cycle.actif" && v){
+      if(!reg.cycle.ancre) reg.cycle.ancre = dayStr(dayNum(nowLocal()));
+      if(!reg.cycle.motif) reg.cycle.motif = "RRRRRRR";
+    }
+    saveReg(reg);
+    if(t.dataset.rf === "garde.ferie") recalcWeeks(currentReg());
+    render();
   }
 });
 
 $("#app").addEventListener("input", e => {
   const t = e.target;
+  if(t.id === "su-nom"){ if(S.ui.su) S.ui.su.nom = t.value; return; }
   if(t.id === "rp-txt") S.ui.rpTxt = t.value;
   else if(t.id === "rp-nom") S.ui.rpNom = t.value;
 });
