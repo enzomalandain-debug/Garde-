@@ -214,8 +214,8 @@ button.p-relance{padding:4px 8px;border-radius:99px}
 .loading{padding:40px 0;text-align:center;color:var(--muted)}
 
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
-.tb{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;border:0;background:transparent;color:var(--muted);font:600 11px/1.1 var(--body);cursor:pointer;min-width:0}
+.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+.tb{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 1px 8px;border:0;background:transparent;color:var(--muted);font:600 10.5px/1.1 var(--body);cursor:pointer;min-width:0;letter-spacing:-.01em}
 .tb svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tb.on{color:var(--accent)}
 .tb.on::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
@@ -229,6 +229,11 @@ details.set.acc{display:block}
 .acc-body{display:flex;flex-direction:column;gap:12px;padding-top:10px;padding-bottom:4px}
 .conf-acc > summary{font-size:13px;color:var(--muted)}
 .conf-acc[open] > .panel{margin-top:8px}
+.now{display:flex;flex-direction:column;gap:8px;border-color:var(--accent)}
+.now-t{font:700 18px/1 var(--display);text-transform:uppercase;letter-spacing:.04em}
+.now-main{margin:0;font-size:16px;line-height:1.4}
+.p-trou{background:var(--gap-soft);color:var(--gap)}
+#bl-year{width:auto}
 .view-title{font:700 24px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
 .view-reglages #reg-det > summary{display:none}
 .view-reglages #reg-det > .set:first-of-type{margin-top:0}
@@ -265,7 +270,7 @@ body.has-tabs .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "6 nov. 2026 (n°9)";
+const APP_VERSION = "6 nov. 2026 (n°10)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -801,7 +806,7 @@ function ensureContact(nom){
 function weekLabel(w){
   const s = new Date(parseLocal(w.debut) * 60000), e = new Date((parseLocal(w.fin) - 1) * 60000);
   const sameM = s.getUTCMonth() === e.getUTCMonth();
-  return `${dn(s.getUTCDate())}${sameM ? "" : " " + MOIS[s.getUTCMonth()]} → ${dn(e.getUTCDate())} ${MOIS[e.getUTCMonth()]} ${e.getUTCFullYear()}${w.exemple ? " · exemple" : ""}`;
+  return `${dn(s.getUTCDate())}${sameM ? "" : " " + MOIS[s.getUTCMonth()]} → ${dn(e.getUTCDate())} ${MOIS[e.getUTCMonth()]} ${e.getUTCFullYear()}${w.exemple ? " · exemple" : ""}${w.echangeAvec ? ` · échange ${prenom(w.echangeAvec)}` : (w.remplacements || []).some(r => r.echange) ? " · échangée" : ""}`;
 }
 function renderEyebrow(){
   const el = $(".eyebrow"); if(!el) return;
@@ -993,7 +998,7 @@ function gapsView(m, week){
     const btns = conf
       ? `<div class="actions"><button type="button" class="btn small danger" data-act="rm-rempl-ok" data-id="${esc(r.id)}">Tout retirer</button><button type="button" class="btn small ghost" data-act="unconfirm">Garder</button></div>`
       : S.ui.part === r.id ? "" : `<div class="actions"><button type="button" class="btn small" data-act="part-open" data-id="${esc(r.id)}"${ro}>Retirer une partie</button><button type="button" class="chip x" data-act="confirm" data-v="r:${esc(r.id)}" aria-label="Retirer tout ce remplacement"${ro}>Tout retirer</button></div>`;
-    return `<div class="item" id="rempl-${esc(r.id)}"><div class="item-main"><span class="who">${esc(r.nom)}</span><span class="item-sub tnum">${esc(fmtSlot(sl))} · ${fmtDur(sl.e - sl.s)}</span></div>${btns}${part}</div>`;
+    return `<div class="item" id="rempl-${esc(r.id)}"><div class="item-main"><span class="who">${esc(r.nom)}${r.echange ? ` <span class="pill p-peut">Échange</span>` : ""}</span><span class="item-sub tnum">${esc(fmtSlot(sl))} · ${fmtDur(sl.e - sl.s)}</span></div>${btns}${part}</div>`;
   }).join("");
   const provItems = sortedProv(week).map(r => {
     const sl = slotOf(r);
@@ -1268,6 +1273,153 @@ function aideView(){
     </div>
   </details>`;
 }
+/* ---------- En ce moment ---------- */
+function inTxt(cells){
+  const mins = cells * U;
+  if(mins < 60) return `dans ${mins} min`;
+  const h = mins / 60;
+  if(h < 48) return `dans ${fmtNum(Math.round(h * 2) / 2)} h`;
+  return `dans ${Math.round(h / 24)} jours`;
+}
+function quand(e, h){
+  const de = Math.floor((isMidnight(e) ? e - 1 : e) / CPD), dh = Math.floor(h / CPD), t = isMidnight(e) ? "minuit" : fmtH(e);
+  if(de === dh) return t;
+  if(de === dh + 1 && !isMidnight(e)) return "demain " + t;
+  return `${fmtDay(isMidnight(e) ? e - 1 : e)} ${t}`;
+}
+function quandDebut(x, h){
+  const dx = Math.floor(x / CPD), dh = Math.floor(h / CPD), t = fmtH(x);
+  if(dx === dh) return (hourDate(x).getUTCHours() >= 17 ? "ce soir à " : "aujourd'hui à ") + t;
+  if(dx === dh + 1) return "demain à " + t;
+  return `${fmtDay(x, true)} à ${t}`;
+}
+function weekNow(reg){
+  const h = Math.floor(parseLocal(nowLocal()) / U);
+  for(const w of S.weeks){
+    const m = compute(w, reg); if(!m) continue;
+    if(h >= m.g0 - 2 * CPD && h < m.g1) return { w, m, h };
+  }
+  return null;
+}
+function nowCard(week, reg){
+  const wn = weekNow(reg); if(!wn) return "";
+  const { w, m, h } = wn, c = m.cells.get(h);
+  const runEnd = pred => { let e = h; while(m.cells.has(e) && pred(m.cells.get(e))) e++; return e; };
+  const ensuite = e => {
+    const n = m.cells.get(e);
+    if(!n) return ", fin de cette plage de garde";
+    if(n.cover) return `, puis ${esc(prenom(n.cover))} prend le relais`;
+    if(n.busy) return n.prov ? `, puis ${esc(prenom(n.prov))} doit confirmer` : ", puis c'est un trou à couvrir";
+    return ", puis c'est toi";
+  };
+  let pill, cls, main;
+  if(!c){
+    const next = [...m.cells.keys()].filter(x => x > h).sort((a, b) => a - b)[0];
+    if(next == null) return "";
+    pill = "Pas de garde"; cls = "p-non";
+    main = `Ta prochaine plage de garde commence ${esc(quandDebut(next, h))} (${inTxt(next - h)}).`;
+  } else if(c.cover){
+    const e = runEnd(x => x.cover === c.cover);
+    pill = "Remplacé"; cls = "p-oui";
+    main = `<b>${esc(c.cover)}</b> te remplace jusqu'à ${esc(quand(e, h))}${ensuite(e)}.`;
+  } else if(c.busy){
+    const e = runEnd(x => x.busy && !x.cover);
+    pill = "Trou"; cls = "p-trou";
+    main = c.prov ? `<b>${esc(c.prov)}</b> doit encore confirmer, jusqu'à ${esc(quand(e, h))}.` : `Personne ne te remplace en ce moment, jusqu'à ${esc(quand(e, h))}.`;
+  } else {
+    const e = runEnd(x => !x.busy && !x.cover);
+    pill = "De garde"; cls = "p-peut";
+    main = `Tu es de garde jusqu'à ${esc(quand(e, h))}${ensuite(e)}.`;
+  }
+  const g = m.libres.find(x => x.s > h);
+  const next = g ? `Prochain trou à couvrir : ${esc(fmtSlot(g))} (${inTxt(g.s - h)}).` : (m.libres.length ? "" : "Aucun trou à couvrir sur cette garde.");
+  return `<section class="panel now" aria-label="En ce moment">
+    <div class="line1"><b class="now-t">En ce moment</b><span class="pill ${cls}">${pill}</span></div>
+    <p class="now-main">${main}</p>
+    ${next ? `<p class="item-sub" style="margin:0">${next}</p>` : ""}
+    ${w.id !== week.id ? `<div class="actions"><button type="button" class="btn small" data-act="go-week" data-v="${esc(w.id)}">Voir la garde du ${esc(weekLabel(w))}</button></div>` : ""}
+  </section>`;
+}
+
+/* ---------- Entraide : bilan, remplacements rendus, échanges ---------- */
+function yearOf(sl){ return hourDate(sl.s).getUTCFullYear(); }
+function bilanYears(reg){
+  const ys = new Set([new Date().getFullYear()]);
+  for(const w of S.weeks) for(const r of (w.remplacements || [])) if(!r.provisoire && !r.echange) ys.add(yearOf(slotOf(r)));
+  for(const r of (reg.rendus || [])) ys.add(yearOf(slotOf(r)));
+  return [...ys].sort((a, b) => b - a);
+}
+function bilanData(reg, year){
+  const map = new Map();
+  const add = (nom, f, hrs) => { const k = String(nom || "").trim().toLowerCase(); if(!k) return; if(!map.has(k)) map.set(k, { nom: String(nom).trim(), pour: 0, par: 0 }); map.get(k)[f] += hrs; };
+  for(const w of S.weeks) for(const r of (w.remplacements || [])){
+    if(r.provisoire || r.echange) continue;
+    const sl = slotOf(r); if(yearOf(sl) === year) add(r.nom, "pour", (sl.e - sl.s) / CPH);
+  }
+  for(const r of (reg.rendus || [])){ const sl = slotOf(r); if(yearOf(sl) === year) add(r.nom, "par", (sl.e - sl.s) / CPH); }
+  return [...map.values()].sort((a, b) => Math.abs(b.par - b.pour) - Math.abs(a.par - a.pour) || (b.pour + b.par) - (a.pour + a.par));
+}
+function soldeTxt(x){
+  const d = x.par - x.pour;
+  if(d > 0.25) return [`Te doit ${fmtNum(d)} h`, "p-oui"];
+  if(d < -0.25) return [`Tu lui dois ${fmtNum(-d)} h`, "p-attente"];
+  return ["À égalité", "p-non"];
+}
+function mesGardes(reg){ return gardeDays(reg, dayNum(nowLocal()) - 6, 8); }
+function gardesAutres(reg){
+  const mine = equipeOf(reg), today = dayNum(nowLocal()), out = [];
+  if(!mine) return null;
+  for(const k of Object.keys(CENTRE.equipes)){
+    if(k === mine) continue;
+    for(const d of gardeDays({ garde: gardeEquipe(k) }, today - 6, 3)) out.push({ d, eq: k });
+  }
+  return out.sort((a, b) => dayNum(a.d) - dayNum(b.d));
+}
+function entraideView(reg){
+  const ro = S.readOnly ? " disabled" : "";
+  const years = bilanYears(reg), year = years.includes(S.ui.year) ? S.ui.year : years[0];
+  const data = bilanData(reg, year);
+  const totPour = data.reduce((a, x) => a + x.pour, 0), totPar = data.reduce((a, x) => a + x.par, 0);
+  const rows = data.map(x => { const [t, cls] = soldeTxt(x); return `<div class="item"><div class="item-main"><span class="who">${esc(x.nom)}</span><span class="item-sub tnum">T'a remplacé ${fmtNum(x.pour)} h · Tu l'as remplacé ${fmtNum(x.par)} h</span></div><span class="pill ${cls}">${esc(t)}</span></div>`; }).join("");
+  const bilan = `<section class="sec"><h2>Entraide</h2>
+    <div class="panel list">
+      <div class="item"><div class="item-main"><span class="who tnum">${fmtNum(totPour)} h faites pour toi · ${fmtNum(totPar)} h rendues</span><span class="item-sub">Échanges de garde non comptés.</span></div>${years.length > 1 ? `<select id="bl-year" aria-label="Année">${years.map(y => `<option value="${y}"${y === year ? " selected" : ""}>${y}</option>`).join("")}</select>` : `<span class="pill p-non">${year}</span>`}</div>
+      ${rows || `<div class="item"><span class="muted">Personne pour l'instant. Les remplacements validés et ceux que tu fais pour les autres s'afficheront ici.</span></div>`}
+    </div></section>`;
+
+  const rendus = (reg.rendus || []).filter(r => yearOf(slotOf(r)) === year).sort((a, b) => parseLocal(b.debut) - parseLocal(a.debut));
+  const rdList = rendus.map(r => { const sl = slotOf(r); return `<div class="item"><div class="item-main"><span class="who">${esc(r.nom)}</span><span class="item-sub tnum">${esc(fmtSlot(sl))} · ${fmtDur(sl.e - sl.s)}${r.note ? " · " + esc(r.note) : ""}</span></div><button type="button" class="chip x" data-act="rd-rm" data-id="${esc(r.id)}" aria-label="Supprimer"${ro}>×</button></div>`; }).join("");
+  const rdForm = S.ui.rdOpen ? `<div class="addrow" style="display:block"><div class="assign">
+      <label for="rd-nom">Qui as-tu remplacé ?<input type="text" id="rd-nom" list="people" autocomplete="off" placeholder="Prénom"></label>
+      <label for="rd-day">Jour<input type="date" id="rd-day" value="${esc(dayStr(dayNum(nowLocal())))}"></label>
+      <div class="hr-row"><span class="hr-l">Horaires</span><select id="rd-de" aria-label="De">${hourSelOpts("19:00")}</select><span class="gm-l">→</span><select id="rd-a" aria-label="À">${hourSelOpts("07:00")}</select></div>
+      <span class="item-sub">Si l'heure de fin est avant l'heure de début, ça finit le lendemain.</span>
+      <label for="rd-note">Note (facultatif)<input type="text" id="rd-note" autocomplete="off" placeholder="Garde équipe C…"></label>
+      <div class="actions"><button type="button" class="btn primary" data-act="rd-ok">Enregistrer</button><button type="button" class="btn ghost" data-act="rd-cancel">Annuler</button></div>
+    </div></div>` : `<div class="addrow"><button type="button" class="btn small" data-act="rd-open"${ro}>J'ai remplacé un collègue</button></div>`;
+  const rdSec = `<section class="sec"><h3>Quand tu remplaces un collègue</h3><div class="panel list">${rdList || `<div class="item"><span class="muted">Note ici les fois où c'est toi qui rends service : ça compte dans le bilan.</span></div>`}${rdForm}</div></section>`;
+
+  const exs = (reg.echanges || []).slice().sort((a, b) => dayNum(b.maGarde) - dayNum(a.maGarde));
+  const exList = exs.map(x => {
+    const conf = S.ui.confirm === "ex:" + x.id;
+    return `<div class="item"><div class="item-main"><span class="who">Avec ${esc(x.nom)}</span><span class="item-sub">${esc(prenom(x.nom))} fait ta garde du ${esc(fmtDay(dayNum(x.maGarde) * CPD, true))}, tu fais la sienne du ${esc(fmtDay(dayNum(x.saGarde) * CPD, true))}</span></div>
+      ${conf ? `<div class="actions"><button type="button" class="btn small danger" data-act="ex-rm-ok" data-id="${esc(x.id)}">Annuler l'échange</button><button type="button" class="btn small ghost" data-act="unconfirm">Garder</button></div>` : `<button type="button" class="chip x" data-act="confirm" data-v="ex:${esc(x.id)}" aria-label="Annuler cet échange"${ro}>×</button>`}</div>`;
+  }).join("");
+  let exForm;
+  if(S.ui.exOpen){
+    const mg = mesGardes(reg), autres = gardesAutres(reg);
+    exForm = `<div class="addrow" style="display:block"><div class="assign">
+      <label for="ex-nom">Avec qui ?<input type="text" id="ex-nom" list="people" autocomplete="off" placeholder="Prénom"></label>
+      <label for="ex-ma">Ta garde, qu'il fera<select id="ex-ma">${mg.map(d => `<option value="${d}">${esc(cap(fmtDay(dayNum(d) * CPD, true)))}</option>`).join("")}</select></label>
+      ${autres ? `<label for="ex-sa">Sa garde, que tu feras<select id="ex-sa">${autres.map(o => `<option value="${o.d}">Équipe ${o.eq} · ${esc(fmtDay(dayNum(o.d) * CPD, true))}</option>`).join("")}</select></label>`
+        : `<label for="ex-sa">Sa garde commence le<input type="date" id="ex-sa"></label>`}
+      <span class="item-sub">Ta garde passe entièrement à son nom, et sa semaine s'ajoute à ton planning avec ton cycle de travail.</span>
+      <div class="actions"><button type="button" class="btn primary" data-act="ex-ok">Enregistrer l'échange</button><button type="button" class="btn ghost" data-act="ex-cancel">Annuler</button></div>
+    </div></div>`;
+  } else exForm = `<div class="addrow"><button type="button" class="btn small" data-act="ex-open"${ro}>Noter un échange de garde</button></div>`;
+  const exSec = `<section class="sec"><h3>Échanges de garde</h3><div class="panel list">${exList || `<div class="item"><span class="muted">Tu échanges ta semaine avec quelqu'un d'une autre équipe ? Note-le ici : les deux plannings se mettent à jour.</span></div>`}${exForm}</div></section>`;
+  return bilan + rdSec + exSec;
+}
 function restoreBlock(){
   return `<label for="bk-file">Restaurer depuis un fichier<input type="file" id="bk-file"></label>
       <label for="bk-txt">ou colle le texte d'une sauvegarde<textarea id="bk-txt" rows="3"></textarea></label>
@@ -1300,6 +1452,7 @@ const VIEWS = [
   { id: "garde", label: "Garde", icon: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>' },
   { id: "messages", label: "Messages", icon: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>' },
   { id: "reponses", label: "Réponses", icon: '<path d="M4 13l3-8h10l3 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5"/>' },
+  { id: "entraide", label: "Entraide", icon: '<path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/>' },
   { id: "dispos", label: "Dispos", icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
   { id: "reglages", label: "Réglages", icon: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
 ];
@@ -1329,6 +1482,8 @@ document.addEventListener("toggle", e => {
   const d = e.target; if(!d || !d.classList || !d.classList.contains("acc")) return;
   S.ui.acc = { ...(S.ui.acc || {}), [d.dataset.acc]: d.open };
 }, true);
+setInterval(() => { if((S.ui.view || "garde") === "garde" && !document.hidden) requestRender(); }, 60000);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) requestRender(); });
 $("#tabbar").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if(b) goTab(b.dataset.view); });
 
 let pendingRender = false;
@@ -1374,7 +1529,8 @@ function render(){
   const view = S.ui.view || "garde";
   document.body.className = "has-tabs view-" + view;
   renderTabbar(true, week, m, reg);
-  if(view === "garde") html += installCard() + backupBanner(reg) + summaryView(m, week) + boardView(m, reg) + gapsView(m, week);
+  if(view === "garde") html += installCard() + backupBanner(reg) + nowCard(week, reg) + summaryView(m, week) + boardView(m, reg) + gapsView(m, week);
+  else if(view === "entraide") html += entraideView(reg);
   else if(view === "messages") html += messagesView(m, week, reg);
   else if(view === "reponses") html += rpView(week, m, reg) + suiviView(week);
   else if(view === "dispos") html += ajView(week, m) + consoleView(week, m);
@@ -1639,6 +1795,65 @@ $("#app").addEventListener("click", e => {
     }
     case "bk-copy": copyText(JSON.stringify(backupObj()), "Sauvegarde copiée", markBackup); break;
     case "bk-later": saveReg({ rappelSauvegardeLe: nowLocal() }); render(); toast("Je te le rappellerai dans une semaine"); break;
+    case "go-week": S.activeId = b.dataset.v; render(); window.scrollTo(0, 0); break;
+    case "rd-open": S.ui.rdOpen = true; render(); { const i = $("#rd-nom"); if(i) i.focus(); } break;
+    case "rd-cancel": S.ui.rdOpen = false; render(); break;
+    case "rd-ok": {
+      const nom = ($("#rd-nom").value || "").trim(), day = $("#rd-day").value, de = $("#rd-de").value, a = $("#rd-a").value;
+      if(!nom){ toast("Indique qui tu as remplacé"); $("#rd-nom").focus(); return; }
+      if(!day){ toast("Indique le jour"); return; }
+      const debut = `${day}T${de}`, fin = hm(a) > hm(de) ? `${day}T${a}` : `${dayStr(dayNum(day) + 1)}T${a}`;
+      saveReg({ rendus: [...clone(reg.rendus || []), { id: uid("x"), nom, debut, fin, note: ($("#rd-note").value || "").trim() }] });
+      ensureContact(nom);
+      S.ui.rdOpen = false; render(); toast(`Noté : ${fmtDur(hCeil(fin) - hFloor(debut))} pour ${prenom(nom)}`);
+      break;
+    }
+    case "rd-rm": saveReg({ rendus: (reg.rendus || []).filter(r => r.id !== b.dataset.id) }); render(); toast("Supprimé"); break;
+    case "ex-open": S.ui.exOpen = true; render(); { const i = $("#ex-nom"); if(i) i.focus(); } break;
+    case "ex-cancel": S.ui.exOpen = false; render(); break;
+    case "ex-ok": {
+      const nom = ($("#ex-nom").value || "").trim(), ma = ($("#ex-ma") || {}).value, sa = ($("#ex-sa") || {}).value;
+      if(!nom){ toast("Indique avec qui tu échanges"); $("#ex-nom").focus(); return; }
+      if(!ma || !sa){ toast("Choisis les deux gardes"); return; }
+      if(ma === sa){ toast("Choisis deux gardes différentes"); return; }
+      const id = uid("e");
+      // Ma garde : entièrement à son nom
+      const mine = S.weeks.find(w => w.id === ma);
+      const perMa = periodsFor(ma, reg);
+      if(!perMa.length){ toast("Ton modèle de garde est vide"); return; }
+      const finMa = perMa.reduce((x, p) => parseLocal(p.fin) > parseLocal(x) ? p.fin : x, perMa[0].fin);
+      const rEx = { id: uid("r"), nom, debut: (mine ? mine.debut : perMa[0].debut), fin: (mine ? mine.fin : finMa), echange: id };
+      if(mine) saveWeek(ma, { remplacements: [...clone(mine.remplacements || []), rEx] });
+      else q(() => S.db.collection("semaines").doc(ma).set({ debut: perMa[0].debut, fin: finMa, periodes: perMa, ajustements: [], remplacements: [rEx], demandes: [], creeLe: nowLocal() }));
+      // Sa garde : ajoutée à mon planning
+      const theirs = S.weeks.find(w => w.id === sa);
+      if(theirs) saveWeek(sa, { echangeAvec: nom, echange: id });
+      else {
+        const perSa = periodsFor(sa, reg);
+        const finSa = perSa.reduce((x, p) => parseLocal(p.fin) > parseLocal(x) ? p.fin : x, perSa[0].fin);
+        q(() => S.db.collection("semaines").doc(sa).set({ debut: perSa[0].debut, fin: finSa, periodes: perSa, ajustements: [], remplacements: [], demandes: [], creeLe: nowLocal(), echangeAvec: nom, echange: id }));
+      }
+      saveReg({ echanges: [...clone(reg.echanges || []), { id, nom, maGarde: ma, saGarde: sa, cree: nowLocal() }] });
+      ensureContact(nom);
+      S.ui.exOpen = false; render();
+      toast(`Échange noté avec ${prenom(nom)}`);
+      break;
+    }
+    case "ex-rm-ok": {
+      const x = (reg.echanges || []).find(e => e.id === b.dataset.id); if(!x) return;
+      S.ui.confirm = null;
+      const mine = S.weeks.find(w => w.id === x.maGarde);
+      if(mine) saveWeek(mine.id, { remplacements: (mine.remplacements || []).filter(r => r.echange !== x.id) });
+      const theirs = S.weeks.find(w => w.id === x.saGarde);
+      if(theirs){
+        const vide = !(theirs.remplacements || []).length && !(theirs.demandes || []).length && !(theirs.ajustements || []).length;
+        if(vide) q(() => S.db.collection("semaines").doc(theirs.id).delete());
+        else saveWeek(theirs.id, { echangeAvec: "", echange: "" });
+      }
+      saveReg({ echanges: (reg.echanges || []).filter(e => e.id !== x.id) });
+      render(); toast("Échange annulé");
+      break;
+    }
     case "aide-open": {
       S.ui.aideOpen = true;
       goTab("reglages", "aide-" + b.dataset.v);
@@ -1777,6 +1992,7 @@ $("#app").addEventListener("change", e => {
     const c = clone(currentReg().cycle), L = Math.min(70, Math.max(1, Math.round(Number(t.value) || 7)));
     c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
   }
+  if(t.id === "bl-year"){ S.ui.year = Number(t.value); render(); return; }
   if(t.id === "g-eq"){
     const v = t.value;
     if(!v){ saveReg({ equipe: "" }); render(); toast("Règle tes plages de garde à la main ci-dessous"); return; }
