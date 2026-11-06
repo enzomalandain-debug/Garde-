@@ -110,6 +110,7 @@ label > input,label > select{color:var(--ink);font-size:15px}
 .s-dispo{background:var(--dispo);color:var(--on-dispo)}
 .s-trou{background:var(--gap);color:var(--on-gap);cursor:pointer}
 .s-cover{background:var(--cover);color:var(--on-cover)}
+button.s-cover{cursor:pointer}
 .s-prov{background:var(--wait-soft);color:var(--wait);outline:1.5px dashed var(--wait);outline-offset:-2px;cursor:pointer}
 .scale .ticks{position:relative;height:14px;font-size:11px;color:var(--muted)}
 .scale .ticks span{position:absolute;transform:translateX(-50%)}
@@ -496,6 +497,14 @@ function genMessage(tab, dest, week, m, reg){
   return { text: "" };
 }
 
+function chefRetraitMsg(week, m, reg, nom, slot){
+  const g = reg.chef ? `Salut ${prenom(reg.chef)},` : "Bonjour,";
+  const sg = reg.signature ? "\n" + reg.signature : "";
+  const tail = [];
+  if(m.attente.length) tail.push(`En attente de confirmation :\n${m.attente.map(a => `• ${msgSlot(a)} (${a.nom})`).join("\n")}`);
+  if(m.libres.length) tail.push(`Au total, il me reste à couvrir :\n${bullets(m.libres)}`);
+  return `${g}\nPour info, sur ma garde ${weekRange(week)}, ${nom} ne pourra finalement pas assurer :\n${bullets([slot])}\nJe cherche quelqu'un d'autre.${tail.length ? "\n" + tail.join("\n") : ""}${sg}`;
+}
 function chefMsg(week, m, reg, nom, slots){
   const g = reg.chef ? `Salut ${prenom(reg.chef)},` : "Bonjour,";
   const sg = reg.signature ? "\n" + reg.signature : "";
@@ -789,12 +798,14 @@ function boardView(m, reg){
       const h = d * CPD + hod, c = m.cells.get(h);
       let st, lbl;
       if(!c){ st = "hors"; lbl = ""; }
-      else if(c.cover){ st = "cover"; lbl = c.cover; }
+      let rid = null;
+      if(!c){}
+      else if(c.cover){ st = "cover"; lbl = c.cover; rid = c.rid; }
       else if(c.busy && c.prov){ st = "prov"; lbl = prenom(c.prov) + " ?"; }
       else if(c.busy){ st = "trou"; lbl = c.busy.label; }
       else { st = "dispo"; lbl = "Moi"; }
       const last = segs[segs.length - 1];
-      if(last && last.st === st && last.lbl === lbl) last.n++; else segs.push({ st, lbl, n: 1, h });
+      if(last && last.st === st && last.lbl === lbl && last.rid === rid) last.n++; else segs.push({ st, lbl, n: 1, h, rid });
     }
     const date = new Date(d * 86400000), code = cycleCode(d, reg);
     const segHtml = segs.map(sg => {
@@ -803,6 +814,7 @@ function boardView(m, reg){
       const title = `${fmtSlot({ s: sg.h, e: sg.h + sg.n })}${sg.lbl ? " · " + sg.lbl : ""}`;
       if(sg.st === "prov") return `<button type="button" class="seg s-prov" style="width:${w}%" data-act="goto-att" title="${esc(title)} — en attente de validation" aria-label="En attente de validation : ${esc(title)}">${txt}</button>`;
       if(sg.st === "trou") return `<button type="button" class="seg s-trou" style="width:${w}%" data-act="goto" data-h="${sg.h}" title="${esc(title)} — à couvrir" aria-label="À couvrir : ${esc(title)}">${txt}</button>`;
+      if(sg.st === "cover" && sg.rid) return `<button type="button" class="seg s-cover" style="width:${w}%" data-act="part-open" data-id="${esc(sg.rid)}" title="${esc(title)} — touche pour modifier" aria-label="Remplacé : ${esc(title)}. Modifier">${txt}</button>`;
       return `<span class="seg s-${sg.st}" style="width:${w}%" title="${esc(title)}">${txt}</span>`;
     }).join("");
     const fer = ferie(d);
@@ -822,9 +834,9 @@ function rpView(week, m, reg){
   let body;
   if(u.rpDone){
     const d = u.rpDone;
-    body = `<div class="line1"><span class="pill p-${esc(d.statut)}">${esc(STATUTS[d.statut])}</span><span>Réponse de ${esc(d.nom)} enregistrée, planning mis à jour.</span></div>
+    body = `<div class="line1">${d.titre ? `<span class="pill p-attente">Désistement</span><span>${esc(d.titre)}</span>` : `<span class="pill p-${esc(d.statut)}">${esc(STATUTS[d.statut])}</span><span>Réponse de ${esc(d.nom)} enregistrée, planning mis à jour.</span>`}</div>
       ${d.chef ? `<label for="rp-chef">Message pour le chef de garde<textarea id="rp-chef" class="big-ta">${esc(d.chef)}</textarea></label>
-      <div class="actions"><button type="button" class="btn primary" data-act="rp-copy">Copier pour le chef de garde</button><button type="button" class="btn" data-act="rp-merci">Message de remerciement</button></div>` : ""}
+      <div class="actions"><button type="button" class="btn primary" data-act="rp-copy">Copier pour le chef de garde</button>${d.titre ? `<button type="button" class="btn" data-act="rp-relance">Préparer une relance</button>` : `<button type="button" class="btn" data-act="rp-merci">Message de remerciement</button>`}</div>` : ""}
       <div class="actions"><button type="button" class="btn ghost" data-act="rp-reset">Coller une autre réponse</button></div>`;
   } else if(u.rp){
     const r = u.rp;
@@ -888,6 +900,14 @@ function ajView(week, m){
   </section>`;
 }
 
+function partInfo(nom, sl, s, e){
+  if(!(e > s)) return "L'heure de fin doit être après le début.";
+  const kept = [];
+  if(s > sl.s) kept.push({ s: sl.s, e: s });
+  if(e < sl.e) kept.push({ s: e, e: sl.e });
+  const p = prenom(nom);
+  return `Redevient à couvrir : ${fmtSlot({ s, e })} (${fmtDur(e - s)}). ` + (kept.length ? `${p} garde : ${kept.map(k => `${fmtSlot(k)} (${fmtDur(k.e - k.s)})`).join(" et ")}.` : `${p} ne fait plus rien sur ce créneau.`);
+}
 function hourOptions(from, to, selected){
   let o = "";
   const multi = Math.floor(from / CPD) !== Math.floor(to / CPD);
@@ -916,9 +936,17 @@ function gapsView(m, week){
   }).join("");
   const rs = sortedRempl(week);
   const remplItems = rs.map(r => {
-    const conf = S.ui.confirm === "r:" + r.id;
-    return `<div class="item"><div class="item-main"><span class="who">${esc(r.nom)}</span><span class="item-sub tnum">${esc(fmtSlot(slotOf(r)))} · ${fmtDur(slotOf(r).e - slotOf(r).s)}</span></div>
-      ${conf ? `<div class="actions"><button type="button" class="btn small danger" data-act="rm-rempl-ok" data-id="${esc(r.id)}">Retirer</button><button type="button" class="btn small ghost" data-act="unconfirm">Garder</button></div>` : `<button type="button" class="chip x" data-act="confirm" data-v="r:${esc(r.id)}" aria-label="Retirer ce remplacement"${S.readOnly ? " disabled" : ""}>Retirer</button>`}</div>`;
+    const conf = S.ui.confirm === "r:" + r.id, sl = slotOf(r), ro = S.readOnly ? " disabled" : "";
+    const part = S.ui.part === r.id ? `<div class="assign part-box" data-rs="${sl.s}" data-re="${sl.e}">
+        <p class="item-sub" style="margin:0">Quelle partie ${esc(prenom(r.nom))} ne peut plus faire ?</p>
+        <div class="hours"><label for="pt-s">De<select id="pt-s">${hourOptions(sl.s, sl.e - 1, sl.s)}</select></label><label for="pt-e">À<select id="pt-e">${hourOptions(sl.s + 1, sl.e, sl.e)}</select></label></div>
+        <p class="item-sub" id="pt-info" style="margin:0">${esc(partInfo(r.nom, sl, sl.s, sl.e))}</p>
+        <div class="actions"><button type="button" class="btn primary" data-act="part-ok" data-id="${esc(r.id)}">Retirer cette partie</button><button type="button" class="btn ghost" data-act="part-cancel">Annuler</button></div>
+      </div>` : "";
+    const btns = conf
+      ? `<div class="actions"><button type="button" class="btn small danger" data-act="rm-rempl-ok" data-id="${esc(r.id)}">Tout retirer</button><button type="button" class="btn small ghost" data-act="unconfirm">Garder</button></div>`
+      : S.ui.part === r.id ? "" : `<div class="actions"><button type="button" class="btn small" data-act="part-open" data-id="${esc(r.id)}"${ro}>Retirer une partie</button><button type="button" class="chip x" data-act="confirm" data-v="r:${esc(r.id)}" aria-label="Retirer tout ce remplacement"${ro}>Tout retirer</button></div>`;
+    return `<div class="item" id="rempl-${esc(r.id)}"><div class="item-main"><span class="who">${esc(r.nom)}</span><span class="item-sub tnum">${esc(fmtSlot(sl))} · ${fmtDur(sl.e - sl.s)}</span></div>${btns}${part}</div>`;
   }).join("");
   const provItems = sortedProv(week).map(r => {
     const sl = slotOf(r);
@@ -928,7 +956,7 @@ function gapsView(m, week){
   return `<section class="sec"><h2>À couvrir</h2>
     ${items ? `<div class="panel list">${items}</div>` : `<p class="muted">${provItems ? "Aucun créneau libre : le reste est en attente de validation." : "Aucun créneau à couvrir."}</p>`}
     ${provItems ? `<h3 id="att-sec">En attente de validation</h3><div class="panel list">${provItems}</div>` : ""}
-    ${remplItems ? `<h3>Remplacements confirmés</h3><div class="panel list">${remplItems}</div>` : ""}
+    ${remplItems ? `<h3 id="conf-sec">Remplacements confirmés</h3><div class="panel list">${remplItems}</div>` : ""}
   </section>`;
 }
 
@@ -1297,6 +1325,37 @@ $("#app").addEventListener("click", e => {
       p.then(() => toast("Message copié"), () => { ta.focus(); ta.select(); toast("Texte sélectionné : copie-le avec ton téléphone"); });
       break;
     }
+    case "part-open": {
+      S.ui.part = b.dataset.id; S.ui.confirm = null; render();
+      const el = document.getElementById("rempl-" + b.dataset.id);
+      if(el){ el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }); setTimeout(() => { const i = $("#pt-s"); if(i) i.focus({ preventScroll: true }); }, reduced ? 0 : 350); }
+      break;
+    }
+    case "part-cancel": S.ui.part = null; render(); break;
+    case "part-ok": {
+      const r0 = (week.remplacements || []).find(x => x.id === b.dataset.id); if(!r0) return;
+      const sl = slotOf(r0), s = Number($("#pt-s").value), e = Number($("#pt-e").value);
+      if(!(e > s)){ toast("L'heure de fin doit être après le début"); return; }
+      const kept = [];
+      if(s > sl.s) kept.push({ s: sl.s, e: s });
+      if(e < sl.e) kept.push({ s: e, e: sl.e });
+      const rempl = (week.remplacements || []).filter(x => x.id !== r0.id).concat(kept.map(k => ({ ...clone(r0), id: uid("r"), debut: isoFromHour(k.s), fin: isoFromHour(k.e) })));
+      const encore = rempl.some(x => same(x.nom, r0.nom));
+      const libere = { s, e };
+      const demandes = upsertDemande(week, r0.nom, d => ({ ...(d || { id: uid("d"), nom: r0.nom }), statut: encore ? ((d && d.statut) || "oui") : "non", maj: nowLocal(), note: `S'est désisté : ${fmtSlot(libere)}` }));
+      saveWeek(week.id, { remplacements: rempl, demandes });
+      const m2 = compute({ ...week, remplacements: rempl }, reg);
+      S.ui.part = null; S.ui.rp = null; S.ui.tab = "relance"; S.ui.dest = "";
+      S.ui.rpDone = { nom: r0.nom, statut: encore ? "oui" : "non", titre: `${prenom(r0.nom)} ne fait plus ${fmtSlot(libere)} : ce créneau est de nouveau à couvrir.`, chef: m2 ? chefRetraitMsg(week, m2, reg, r0.nom, libere) : "" };
+      render(); toast("Partie retirée du planning");
+      { const sec = document.getElementById("rp-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); }
+      break;
+    }
+    case "rp-relance": {
+      S.ui.tab = "relance"; S.ui.dest = ""; render();
+      const sec = document.getElementById("msg-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      break;
+    }
     case "rp-merci": {
       const d = S.ui.rpDone; if(!d) return;
       S.ui.tab = "merci"; S.ui.dest = d.nom; render();
@@ -1457,6 +1516,11 @@ $("#app").addEventListener("change", e => {
     return;
   }
   if(t.id === "as-s" || t.id === "as-e"){ updateReste(); return; }
+  if(t.id === "pt-s" || t.id === "pt-e"){
+    const box = $(".part-box"), info = $("#pt-info"), r0 = (week.remplacements || []).find(x => x.id === S.ui.part);
+    if(box && info && r0) info.textContent = partInfo(r0.nom, { s: Number(box.dataset.rs), e: Number(box.dataset.re) }, Number($("#pt-s").value), Number($("#pt-e").value));
+    return;
+  }
   if(t.dataset.saisi !== undefined && week){
     const sig = t.dataset.saisi, day = sig.split("|")[0];
     const list = (week.saisies || []).filter(k => !k.startsWith(day + "|"));
