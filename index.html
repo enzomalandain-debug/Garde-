@@ -199,6 +199,13 @@ details.panel[open] > summary::after{content:"–"}
 .cy.c-N{background:var(--accent);color:var(--on-accent);border-color:transparent}
 .cy.c-N small{color:var(--on-accent)}
 .cy.c-R b{color:var(--muted)}
+.install{display:flex;flex-direction:column;gap:8px;border-color:var(--accent)}
+.install > b{font:700 18px/1.15 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.p-relance{background:var(--gap-soft);color:var(--gap);border:0;cursor:pointer;font:600 12px/1 var(--body)}
+button.p-relance{padding:4px 8px;border-radius:99px}
+.tuto{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45}
+.tuto li::marker{font-weight:700;color:var(--accent)}
+#aide-det .set > b{font-size:14px}
 .set textarea{width:100%;resize:vertical;font-size:13px;color:var(--ink)}
 
 .banner{display:flex;flex-direction:column;gap:4px;border:1px dashed var(--wait);border-radius:10px;padding:12px 14px;font-size:14px;background:var(--wait-soft)}
@@ -236,7 +243,7 @@ details.panel[open] > summary::after{content:"–"}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "6 nov. 2026 (n°6)";
+const APP_VERSION = "6 nov. 2026 (n°7)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -479,7 +486,10 @@ function genMessage(tab, dest, week, m, reg){
       if(!rest.length) return { text: "", hint: "Tout est couvert : pas de demande à envoyer." };
       if(!libres.length) return { text: "", hint: attHint };
       return { text: `${g}\nJe suis de garde ${wr} mais ${pourquoi}. ${tu ? "Tu pourrais" : "Quelqu'un pourrait"} me remplacer sur un de ceux-là ?\n${bullets(libres)}${attBlock}\nMême une partie d'un créneau, ça m'aide. ${tu ? "Dis-moi ce qui t'arrange" : "Dites-moi ce qui vous arrange"}. Merci !${sg}` };
-    case "relance":
+    case "relance": {
+      const pv = tu ? provOf(week, dest) : [];
+      if(pv.length) return { text: `${g}\nTu peux me confirmer pour ma garde ${wr} ?\n${bullets(pv)}\nDis-moi dès que tu sais. Merci !${sg}` };
+    }
       if(!rest.length) return { text: "", hint: "Plus rien à couvrir : utilise plutôt « Clôture » pour prévenir ceux qui n'ont pas répondu." };
       if(!libres.length) return { text: "", hint: attHint };
       return { text: `${g}\nPetite relance pour ma garde ${wr}. ${someCovered ? "Une partie est déjà prise, il" : "Il"} me reste ces créneaux :\n${bullets(libres)}${attBlock}\n${tu ? "Si tu peux en prendre un, même en partie, fais-moi signe" : "Si quelqu'un peut en prendre un, même en partie, faites-moi signe"}. Merci !${sg}` };
@@ -793,7 +803,7 @@ function summaryView(m, week){
   return `<section class="panel summary" aria-label="Résumé">
     <div class="sum-main"><span class="big tnum${m.resteH ? "" : " ok"}">${fmtNum(m.resteH)}<small> h</small></span><span class="sum-lbl">${lbl}</span></div>
     <div class="meter" role="img" aria-label="${pct} % des trous couverts${m.attenteH ? `, ${fmtNum(m.attenteH)} h en attente de validation` : ""}"><span style="width:${pct}%"></span><span class="m-prov" style="width:${m.besoinH ? Math.round(m.attenteH / m.besoinH * 100) : 0}%"></span></div>
-    <div class="sum-meta tnum"><span>${n} créneau${n > 1 ? "x" : ""} restant${n > 1 ? "s" : ""}</span><span>·</span><span>${fmtNum(done)} h remplacée${done > 1 ? "s" : ""} sur ${fmtNum(m.besoinH)} h</span>${m.attenteH ? `<span class="pill p-attente">${fmtNum(m.attenteH)} h en attente de validation</span>` : ""}${attente ? `<span class="pill p-attente">${attente} réponse${attente > 1 ? "s" : ""} en attente</span>` : ""}</div>
+    <div class="sum-meta tnum"><span>${n} créneau${n > 1 ? "x" : ""} restant${n > 1 ? "s" : ""}</span><span>·</span><span>${fmtNum(done)} h remplacée${done > 1 ? "s" : ""} sur ${fmtNum(m.besoinH)} h</span>${m.attenteH ? `<span class="pill p-attente">${fmtNum(m.attenteH)} h en attente de validation</span>` : ""}${attente ? `<span class="pill p-attente">${attente} réponse${attente > 1 ? "s" : ""} en attente</span>` : ""}${(() => { const n = aRelancer(week).length; return n ? `<button type="button" class="pill p-relance" data-act="goto-rep">${n} à relancer</button>` : ""; })()}</div>
   </section>`;
 }
 
@@ -991,16 +1001,18 @@ function messagesView(m, week, reg){
 }
 
 function suiviView(week){
+  const relances = aRelancer(week);
   const dem = week.demandes || [];
   const rows = dem.map(d => {
     const mine = remplsOf(week, d.nom);
     const conf = S.ui.confirm === "d:" + d.id;
     const pv = provOf(week, d.nom);
     const sub = [mine.length ? mine.map(fmtSlot).join(" + ") : "", pv.length ? pv.map(x => fmtSlot(x) + " (à confirmer)").join(" + ") : "", d.note || "", d.maj ? "màj " + fmtMaj(d.maj) : ""].filter(Boolean).join(" · ");
-    return `<div class="item"><div class="item-main"><div class="line1"><span class="who">${esc(d.nom)}</span><span class="pill p-${esc(d.statut || "attente")}">${esc(STATUTS[d.statut] || "En attente")}</span></div>${sub ? `<span class="item-sub tnum">${esc(sub)}</span>` : ""}</div>
+    const rl = relances.find(x => x.id === d.id);
+    return `<div class="item"><div class="item-main"><div class="line1"><span class="who">${esc(d.nom)}</span><span class="pill p-${esc(d.statut || "attente")}">${esc(STATUTS[d.statut] || "En attente")}</span>${rl ? `<span class="pill p-relance">Sans réponse depuis ${esc(fmtAge(rl.h))}</span>` : ""}</div>${sub ? `<span class="item-sub tnum">${esc(sub)}</span>` : ""}${rl ? `<div class="actions"><button type="button" class="btn small" data-act="relancer" data-v="${esc(d.nom)}">Relancer ${esc(prenom(d.nom))}</button></div>` : ""}</div>
       <div class="chips" role="group" aria-label="Réponse de ${esc(d.nom)}">${Object.entries(STATUTS).map(([k, v]) => `<button type="button" class="chip${d.statut === k ? " on" : ""}" data-act="statut" data-id="${esc(d.id)}" data-v="${k}"${S.readOnly ? " disabled" : ""}>${v}</button>`).join("")}${conf ? `<button type="button" class="chip warn" data-act="rm-dem-ok" data-id="${esc(d.id)}">Confirmer</button>` : `<button type="button" class="chip x" data-act="confirm" data-v="d:${esc(d.id)}" aria-label="Retirer ${esc(d.nom)} du suivi"${S.readOnly ? " disabled" : ""}>×</button>`}</div></div>`;
   }).join("");
-  return `<section class="sec"><h2>Réponses</h2>
+  return `<section class="sec" id="rep-sec"><h2>Réponses</h2>
     <div class="panel list">
       ${rows || `<div class="item"><span class="muted">Personne contacté pour l'instant. Copie un message pour quelqu'un, ou ajoute-le ici.</span></div>`}
       <div class="addrow"><input type="text" id="dem-nom" list="people" placeholder="Personne contactée" aria-label="Personne contactée" autocomplete="off"><button type="button" class="btn small" data-act="add-dem"${S.readOnly ? " disabled" : ""}>Ajouter</button></div>
@@ -1063,6 +1075,7 @@ function settingsView(week, reg){
     </div>
     <div class="set"><h3>Sauvegarde</h3>
       <span style="font-size:14px">Tout est enregistré sur ce téléphone, dans ce navigateur. Fais une sauvegarde de temps en temps : elle sert aussi à envoyer ton planning à Claude ou à le passer sur un autre téléphone.</span>
+      <span class="item-sub">${reg.derniereSauvegarde ? `Dernière sauvegarde : ${esc(fmtMaj(reg.derniereSauvegarde))}.` : "Aucune sauvegarde pour l'instant."}</span>
       <div class="actions"><button type="button" class="btn small" data-act="bk-dl">Enregistrer ou envoyer la sauvegarde</button><button type="button" class="btn small" data-act="bk-copy">Copier la sauvegarde</button></div>
       ${restoreBlock()}
     </div>
@@ -1140,6 +1153,69 @@ function setupView(){
     </section>
     <section class="panel sec set" aria-label="Restaurer une sauvegarde"><h2>J'ai déjà une sauvegarde</h2>${restoreBlock()}</section>`;
 }
+const JOUR_MIN = 1440;
+function isInstalled(){ try { return window.navigator.standalone === true || matchMedia("(display-mode: standalone)").matches; } catch(e){ return false; } }
+function backupDue(reg){
+  if(!S.weeks.length) return null;
+  const now = parseLocal(nowLocal()), ref = reg.derniereSauvegarde || reg.creeLe || null;
+  const age = ref ? Math.floor((now - parseLocal(ref)) / JOUR_MIN) : null;
+  if(age != null && age < 30) return null;
+  if(reg.rappelSauvegardeLe && (now - parseLocal(reg.rappelSauvegardeLe)) / JOUR_MIN < 7) return null;
+  return { age, jamais: !reg.derniereSauvegarde };
+}
+function markBackup(){ saveReg({ derniereSauvegarde: nowLocal() }); render(); }
+function fmtAge(h){ return h < 48 ? `${Math.floor(h)} h` : `${Math.floor(h / 24)} jours`; }
+function aRelancer(week){
+  const now = parseLocal(nowLocal());
+  if(parseLocal(week.fin) < now) return [];
+  return (week.demandes || []).filter(d => (d.statut === "attente" || d.statut === "peut") && d.maj && (now - parseLocal(d.maj)) / 60 >= 24)
+    .map(d => ({ ...d, h: (now - parseLocal(d.maj)) / 60 }));
+}
+function installCard(){
+  if(isInstalled()) return "";
+  return `<section class="panel install" aria-label="Installer l'appli"><b>Installe l'appli sur ton écran d'accueil</b>
+    <p class="item-sub" style="margin:0">Tu es dans le navigateur. Une fois installée, l'appli marche sans réseau et garde bien tes données.</p>
+    <div class="actions"><button type="button" class="btn small primary" data-act="aide-open" data-v="installer">Voir comment faire</button></div></section>`;
+}
+function backupBanner(reg){
+  const due = backupDue(reg); if(!due) return "";
+  return `<div class="banner"><b>Pense à sauvegarder</b><span>${due.jamais ? "Tu n'as encore jamais fait de sauvegarde." : `Ta dernière sauvegarde date de ${due.age} jours.`} Tes données ne sont que sur ce téléphone : si tu le perds ou en changes, tout serait perdu.</span>
+    <div class="actions"><button type="button" class="btn small primary" data-act="bk-dl">Sauvegarder maintenant</button><button type="button" class="btn small ghost" data-act="aide-open" data-v="sauvegarde">Comment faire ?</button><button type="button" class="btn small ghost" data-act="bk-later">Plus tard</button></div></div>`;
+}
+function aideView(){
+  return `<details class="panel" id="aide-det"${S.ui.aideOpen ? " open" : ""}><summary>Aide</summary>
+    <div class="set" id="aide-installer"><h3>Installer l'appli sur l'écran d'accueil</h3>
+      <p class="item-sub" style="margin:0">Une fois installée, l'appli s'ouvre comme une vraie appli, marche sans réseau et garde tes données.</p>
+      <b>iPhone</b>
+      <ol class="tuto">
+        <li>Ouvre l'adresse dans <b>Safari</b>. Si tu as flashé le QR code ou ouvert le lien depuis WhatsApp ou Messages, passe d'abord dans Safari (bouton « Ouvrir dans Safari » ou icône boussole).</li>
+        <li>Touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut). S'il n'est pas visible, touche d'abord <b>⋯</b> à côté de l'adresse.</li>
+        <li>Descends et choisis <b>Sur l'écran d'accueil</b>. Si l'option « Ouvrir en tant qu'app web » apparaît, laisse-la activée. Touche <b>Ajouter</b>.</li>
+        <li>Ferme Safari et ouvre l'appli avec la nouvelle icône <b>Garde</b>. Utilise toujours cette icône.</li>
+      </ol>
+      <b>Android</b>
+      <ol class="tuto">
+        <li>Ouvre l'adresse dans <b>Chrome</b>.</li>
+        <li>Touche <b>⋮</b> en haut à droite, puis <b>Installer l'appli</b> (ou <b>Ajouter à l'écran d'accueil</b>).</li>
+        <li>Ouvre l'appli avec la nouvelle icône.</li>
+      </ol>
+      <div class="notice"><b>Important sur iPhone :</b> l'onglet Safari et l'icône ne partagent pas leurs données. Si tu as commencé dans Safari, fais d'abord <b>Réglages › Sauvegarde › Copier la sauvegarde</b> dans Safari, puis ouvre l'icône et colle-la dans « J'ai déjà une sauvegarde » › <b>Restaurer</b>.</div>
+    </div>
+    <div class="set" id="aide-sauvegarde"><h3>Sauvegarder tes données</h3>
+      <p class="item-sub" style="margin:0">Tes gardes, tes remplaçants et tes réglages ne sont enregistrés que sur ce téléphone. Une sauvegarde évite de tout perdre si tu changes ou perds ton téléphone.</p>
+      <ol class="tuto">
+        <li>Va dans <b>Réglages › Sauvegarde</b> et touche <b>Enregistrer ou envoyer la sauvegarde</b>.</li>
+        <li>Choisis <b>Enregistrer dans Fichiers</b>, puis le dossier <b>iCloud Drive</b> (sur Android : Google Drive), et touche <b>Enregistrer</b>. Dans le cloud, ta sauvegarde survit à un changement de téléphone.</li>
+        <li>Refais-le de temps en temps : l'appli te le rappelle chaque mois.</li>
+      </ol>
+      <b>Retrouver tes données sur un nouveau téléphone</b>
+      <ol class="tuto">
+        <li>Installe l'appli (voir plus haut) et ouvre-la avec l'icône.</li>
+        <li>Dans « J'ai déjà une sauvegarde », touche <b>Restaurer depuis un fichier</b> et choisis ta dernière sauvegarde.</li>
+      </ol>
+    </div>
+  </details>`;
+}
 function restoreBlock(){
   return `<label for="bk-file">Restaurer depuis un fichier<input type="file" id="bk-file"></label>
       <label for="bk-txt">ou colle le texte d'une sauvegarde<textarea id="bk-txt" rows="3"></textarea></label>
@@ -1186,7 +1262,7 @@ function render(){
   }
   if(!S.weeksLoaded){ app.innerHTML = `<div class="loading">Chargement du planning…</div>${S.notice ? `<div class="notice">${esc(S.notice)}</div>` : ""}`; return; }
   const reg = currentReg(), week = activeWeek();
-  let html = S.notice ? `<div class="notice">${esc(S.notice)}</div>` : "";
+  let html = (S.notice ? `<div class="notice">${esc(S.notice)}</div>` : "") + installCard() + backupBanner(reg);
   if(S.ui.newWeek) html += newWeekView();
   if(!week){
     if(!S.ui.newWeek){
@@ -1195,7 +1271,7 @@ function render(){
         ? setupView()
         : `<section class="panel sec"><h2>Aucune semaine de garde</h2><p class="muted">Choisis ta prochaine garde dans la liste en haut (rubrique « À préparer »), ou restaure une sauvegarde dans les réglages.</p><div class="actions"><button type="button" class="btn primary" data-act="nw">Nouvelle semaine</button></div></section>`;
     }
-    app.innerHTML = html; return;
+    app.innerHTML = html + aideView(); bindAfter(); return;
   }
   const ppl = people(week, reg);
   html += `<datalist id="people">${ppl.map(n => `<option value="${esc(n)}"></option>`).join("")}</datalist>`;
@@ -1205,7 +1281,7 @@ function render(){
     html += `<div class="notice"><b>Période invalide.</b> La fin doit être après le début (31 jours maximum). Corrige-la dans les réglages.</div>` + settingsView(week, reg);
     app.innerHTML = html; bindAfter(); return;
   }
-  html += summaryView(m, week) + rpView(week, m, reg) + boardView(m, reg) + consoleView(week, m) + ajView(week, m) + gapsView(m, week) + messagesView(m, week, reg) + suiviView(week) + settingsView(week, reg);
+  html += summaryView(m, week) + rpView(week, m, reg) + boardView(m, reg) + consoleView(week, m) + ajView(week, m) + gapsView(m, week) + messagesView(m, week, reg) + suiviView(week) + settingsView(week, reg) + aideView();
   html += `<p class="tip">Cette appli marche sans Internet : tout reste sur ce téléphone. Pour que Claude mette à jour ton planning, envoie-lui une sauvegarde (Réglages › Sauvegarde). Version du ${esc(APP_VERSION)}.</p>`;
   app.innerHTML = html;
   bindAfter();
@@ -1213,6 +1289,8 @@ function render(){
 function bindAfter(){
   const det = $("#reg-det");
   if(det) det.addEventListener("toggle", () => { S.ui.settingsOpen = det.open; });
+  const aide = $("#aide-det");
+  if(aide) aide.addEventListener("toggle", () => { S.ui.aideOpen = aide.open; });
 }
 
 function updateReste(){
@@ -1396,7 +1474,7 @@ $("#app").addEventListener("click", e => {
       if(!su.anc || isNaN(dayNum(su.anc))){ toast("Indique quand commence ta prochaine garde"); return; }
       const base = clone(DEFAULT_REG), nom = (su.nom || "").trim();
       const preset = GARDE_PRESETS[su.garde] || GARDE_PRESETS.we;
-      const regNew = { ...base, nom, signature: nom,
+      const regNew = { ...base, nom, signature: nom, creeLe: nowLocal(),
         garde: { ...base.garde, ancre: su.anc, semaines: Math.min(12, Math.max(1, Number(su.sem) || 4)), modele: clone(preset.modele) },
         cycle: { ...base.cycle, actif: su.travail === "cycle", ancre: su.travail === "cycle" ? dayStr(dayNum(nowLocal())) : "" } };
       S.reg = regNew;
@@ -1440,7 +1518,7 @@ $("#app").addEventListener("click", e => {
       try {
         const file = new File([txt], fname, { type: "application/json" });
         if(navigator.canShare && navigator.canShare({ files: [file] })){
-          navigator.share({ files: [file], title: "Sauvegarde remplacements de garde" }).then(() => toast("Sauvegarde envoyée"), e => { if(!e || e.name !== "AbortError") copyText(txt, "Sauvegarde copiée à la place"); });
+          navigator.share({ files: [file], title: "Sauvegarde remplacements de garde" }).then(() => { toast("Sauvegarde enregistrée"); markBackup(); }, e => { if(!e || e.name !== "AbortError") copyText(txt, "Sauvegarde copiée à la place", markBackup); });
           break;
         }
       } catch(e){}
@@ -1450,17 +1528,32 @@ $("#app").addEventListener("click", e => {
         a.download = fname;
         document.body.appendChild(a); a.click();
         setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
-        toast("Sauvegarde téléchargée");
-      } catch(e){ copyText(txt, "Téléchargement impossible : sauvegarde copiée à la place"); }
+        toast("Sauvegarde téléchargée"); markBackup();
+      } catch(e){ copyText(txt, "Téléchargement impossible : sauvegarde copiée à la place", markBackup); }
       break;
     }
-    case "bk-copy": copyText(JSON.stringify(backupObj()), "Sauvegarde copiée"); break;
+    case "bk-copy": copyText(JSON.stringify(backupObj()), "Sauvegarde copiée", markBackup); break;
+    case "bk-later": saveReg({ rappelSauvegardeLe: nowLocal() }); render(); toast("Je te le rappellerai dans une semaine"); break;
+    case "aide-open": {
+      S.ui.aideOpen = true; render();
+      const el = document.getElementById("aide-" + b.dataset.v) || $("#aide-det");
+      if(el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      break;
+    }
+    case "goto-rep": { const el = $("#rep-sec"); if(el) el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); break; }
+    case "relancer": {
+      S.ui.tab = "relance"; S.ui.dest = b.dataset.v; render();
+      const sec = document.getElementById("msg-sec"); if(sec) sec.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      toast(`Copie la relance pour ${prenom(b.dataset.v)}`);
+      break;
+    }
     case "bk-import": askImport(($("#bk-txt") || {}).value); break;
     case "bk-cancel": S.ui.bkConfirm = null; render(); break;
     case "bk-import-ok": {
       const o = S.ui.bkConfirm && S.ui.bkConfirm.data; if(!o) return;
       S.ui.bkConfirm = null; S.activeId = null; S.ui.rp = null; S.ui.rpDone = null;
       LocalDB.importAll(o);
+      saveReg({ derniereSauvegarde: o.exporteLe || nowLocal() });
       toast("Sauvegarde restaurée");
       break;
     }
@@ -1700,13 +1793,14 @@ function askImport(txt){
   S.ui.bkConfirm = { data: o, resume: `La sauvegarde contient ${n} semaine${n > 1 ? "s" : ""} de garde${o.exporteLe ? `, faite le ${fmtMaj(o.exporteLe)}` : ""}. Tes données actuelles sur ce téléphone seront remplacées.` };
   S.ui.settingsOpen = true; render();
 }
-function copyText(text, okMsg){
+function copyText(text, okMsg, onOk){
   const fallback = () => {
     const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
     let ok = false; try { ok = document.execCommand("copy"); } catch(e){}
-    ta.remove(); toast(ok ? okMsg : "Copie impossible ici : utilise plutôt « Télécharger la sauvegarde »");
+    ta.remove(); toast(ok ? okMsg : "Copie impossible ici : utilise plutôt « Enregistrer ou envoyer la sauvegarde »");
+    if(ok && onOk) onOk();
   };
-  try { navigator.clipboard.writeText(text).then(() => toast(okMsg), fallback); } catch(e){ fallback(); }
+  try { navigator.clipboard.writeText(text).then(() => { toast(okMsg); if(onOk) onOk(); }, fallback); } catch(e){ fallback(); }
 }
 
 (function init(){
