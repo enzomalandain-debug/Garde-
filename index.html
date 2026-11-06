@@ -229,6 +229,7 @@ details.panel[open] > summary::after{content:"–"}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
+const APP_VERSION = "6 nov. 2026 (n°5)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -1059,6 +1060,10 @@ function settingsView(week, reg){
       <div class="actions"><button type="button" class="btn small" data-act="bk-dl">Enregistrer ou envoyer la sauvegarde</button><button type="button" class="btn small" data-act="bk-copy">Copier la sauvegarde</button></div>
       ${restoreBlock()}
     </div>
+    <div class="set"><h3>Appli</h3>
+      <span style="font-size:14px">Version du ${esc(APP_VERSION)}.</span>
+      <div class="actions"><button type="button" class="btn small" data-act="app-update">Chercher une mise à jour</button></div>
+    </div>
     <div class="set"><h3>Cette semaine</h3>
       <div class="actions">${delConf ? `<button type="button" class="btn small danger" data-act="del-week-ok">Supprimer définitivement</button><button type="button" class="btn small ghost" data-act="unconfirm">Annuler</button>` : `<button type="button" class="btn small danger" data-act="confirm" data-v="w:${esc(week.id)}">Supprimer cette semaine</button>`}</div>
     </div>
@@ -1179,7 +1184,7 @@ function render(){
     app.innerHTML = html; bindAfter(); return;
   }
   html += summaryView(m, week) + rpView(week, m, reg) + boardView(m, reg) + consoleView(week, m) + ajView(week, m) + gapsView(m, week) + messagesView(m, week, reg) + suiviView(week) + settingsView(week, reg);
-  html += `<p class="tip">Cette appli marche sans Internet : tout reste sur ce téléphone. Pour que Claude mette à jour ton planning, envoie-lui une sauvegarde (Réglages › Sauvegarde).</p>`;
+  html += `<p class="tip">Cette appli marche sans Internet : tout reste sur ce téléphone. Pour que Claude mette à jour ton planning, envoie-lui une sauvegarde (Réglages › Sauvegarde). Version du ${esc(APP_VERSION)}.</p>`;
   app.innerHTML = html;
   bindAfter();
 }
@@ -1399,6 +1404,14 @@ $("#app").addEventListener("click", e => {
       const motif = (c.motif || "RRRRRRR").split("");
       motif[i] = order[(order.indexOf(motif[i]) + 1) % order.length] || "R";
       c.motif = motif.join(""); saveReg({ cycle: c }); render(); break;
+    }
+    case "app-update": {
+      toast("Recherche d'une mise à jour…");
+      (async () => {
+        try { const r = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if(r) await r.update(); } catch(e){}
+        setTimeout(() => location.reload(), 800);
+      })();
+      break;
     }
     case "bk-dl": {
       const txt = JSON.stringify(backupObj()), fname = `sauvegarde-garde-${nowLocal().slice(0, 10)}.json`;
