@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1D3A78">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Garde">
@@ -248,6 +248,11 @@ body.kbd .toast,body.kbd-vv .toast{bottom:calc(20px + env(safe-area-inset-bottom
   .big{font-size:50px}
 }
 @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
+
+/* Pas de zoom au double-tap ; champs à 16 px pour éviter le zoom automatique de l'iPhone */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,a,summary,label,.seg,.chip,.tb,.cy{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+input,select,textarea{font-size:16px!important}
 </style>
 </head>
 <body>
@@ -272,7 +277,7 @@ body.kbd .toast,body.kbd-vv .toast{bottom:calc(20px + env(safe-area-inset-bottom
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "7 nov. 2026 (n°11)";
+const APP_VERSION = "7 nov. 2026 (n°12)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
