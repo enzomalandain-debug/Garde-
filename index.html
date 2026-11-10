@@ -234,6 +234,16 @@ details.set.acc{display:block}
 .now-main{margin:0;font-size:16px;line-height:1.4}
 .p-trou{background:var(--gap-soft);color:var(--gap)}
 #bl-year{width:auto}
+.seg-mode{gap:6px}
+.seg-mode .chip{flex:1 1 0;text-align:center;padding:10px 12px;font-size:14px}
+details.autre{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+details.autre > summary{text-transform:none;letter-spacing:0;font-size:16px;padding:0}
+.autre-t{display:flex;flex-direction:column;gap:4px;min-width:0}
+.autre-t small{font:500 13px/1.3 var(--body);color:var(--muted);letter-spacing:0;text-transform:none}
+details.autre[open] > .meter{margin-top:10px}
+details.autre > .panel{margin-top:10px;border:0;padding:0}
+.dispo-meter{background:var(--sunk)}
+.dispo-meter span{background:var(--dispo)}
 .view-title{font:700 24px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
 .view-reglages #reg-det > summary{display:none}
 .view-reglages #reg-det > .set:first-of-type{margin-top:0}
@@ -277,7 +287,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "7 nov. 2026 (n°12)";
+const APP_VERSION = "10 nov. 2026 (n°13)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -935,6 +945,59 @@ function consoleView(week, m){
   </section>`;
 }
 
+function autresGardesDispo(reg, n){
+  const mine = equipeOf(reg); if(!mine) return null;
+  const now = parseLocal(nowLocal()), today = dayNum(nowLocal()), out = [];
+  for(const k of Object.keys(CENTRE.equipes)){
+    if(k === mine) continue;
+    const g = gardeEquipe(k);
+    for(const d of gardeDays({ garde: g }, today - 7, 4)){
+      const per = periodsFor(d, { garde: g }); if(!per.length) continue;
+      const fin = per.reduce((x, p) => parseLocal(p.fin) > parseLocal(x) ? p.fin : x, per[0].fin);
+      if(parseLocal(fin) < now) continue;
+      const week = { id: d, debut: per[0].debut, fin, periodes: per, ajustements: [], remplacements: [] };
+      const m = compute(week, reg); if(!m) continue;
+      let libres = 0; for(const c of m.cells.values()) if(!c.busy) libres++;
+      out.push({ d, eq: k, week, m, dispoH: libres / CPH, totalH: m.cells.size / CPH });
+    }
+  }
+  return out.sort((a, b) => dayNum(a.d) - dayNum(b.d)).slice(0, n);
+}
+function autresView(reg){
+  const list = autresGardesDispo(reg, 6);
+  if(list == null) return `<section class="sec"><h2>Dispos sur les autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde : l'appli pourra alors calculer tes dispos sur les gardes des autres équipes.</p></div></section>`;
+  const sa = reg.saisiesAutres || {};
+  const cards = list.map((o, i) => {
+    const days = consoleDays(o.m), done = (sa[o.d] || []);
+    const nDone = days.filter(x => done.includes(x.sig)).length;
+    const open = (S.ui.acc || {})["autre-" + o.d] ?? (i === 0);
+    const rows = days.map(x => {
+      const ok = done.includes(x.sig), stale = !ok && done.some(k => k.startsWith(dayStr(x.d) + "|"));
+      return `<div class="item cons${ok ? " done" : ""}">
+        <div class="item-main"><div class="line1"><span class="who">${esc(fmtDay(x.d * CPD))}</span>${ferie(x.d) ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}</div>
+          <div class="chips">${x.ranges.length ? x.ranges.map(r => `<span class="range tnum">${consH(r.s)} → ${consH(r.e)}</span>`).join("") : `<span class="item-sub">Aucune dispo ce jour-là</span>`}</div></div>
+        <label class="chk saisi" for="sx-${o.d}-${x.d}"><input type="checkbox" id="sx-${o.d}-${x.d}" data-saisi-autre="${o.d}" data-sig="${esc(x.sig)}"${ok ? " checked" : ""}> Saisi</label>
+      </div>`;
+    }).join("");
+    const pct = o.totalH ? Math.round(o.dispoH / o.totalH * 100) : 0;
+    return `<details class="acc autre" data-acc="autre-${o.d}"${open ? " open" : ""}>
+      <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${days.length} saisis</small></span></summary>
+      <div class="meter dispo-meter" role="img" aria-label="${pct} % de dispo"><span style="width:${pct}%"></span></div>
+      <div class="panel list">${rows}<div class="addrow" style="align-items:center"><button type="button" class="btn small" data-act="copy-autre" data-v="${o.d}">Copier la liste</button></div></div>
+    </details>`;
+  }).join("");
+  return `<section class="sec"><h2>Dispos sur les autres équipes</h2>
+    <p class="muted" style="margin:0;font-size:14px">Tes dispos sur les prochaines gardes des autres équipes, calculées avec ton cycle de travail, prêtes à saisir dans la console. Tes indispos perso (rendez-vous, congés…) ne sont pas comptées ici.</p>
+    ${cards || `<div class="panel"><p class="muted" style="margin:0">Aucune garde à venir.</p></div>`}
+  </section>`;
+}
+function dispoModeChips(){
+  const m = S.ui.dispoMode || "moi";
+  return `<div class="chips seg-mode" role="radiogroup" aria-label="Quelles dispos">
+    <button type="button" class="chip${m === "moi" ? " on" : ""}" role="radio" aria-checked="${m === "moi"}" data-act="dispo-mode" data-v="moi">Ma garde</button>
+    <button type="button" class="chip${m === "autres" ? " on" : ""}" role="radio" aria-checked="${m === "autres"}" data-act="dispo-mode" data-v="autres">Autres équipes</button>
+  </div>`;
+}
 function ajView(week, m){
   const ro = S.readOnly ? " disabled" : "";
   const list = [...(week.ajustements || [])].sort(byDebut);
@@ -1553,7 +1616,7 @@ function render(){
   else if(view === "entraide") html += entraideView(reg);
   else if(view === "messages") html += messagesView(m, week, reg);
   else if(view === "reponses") html += rpView(week, m, reg) + suiviView(week);
-  else if(view === "dispos") html += ajView(week, m) + consoleView(week, m);
+  else if(view === "dispos") html += dispoModeChips() + ((S.ui.dispoMode || "moi") === "autres" ? autresView(reg) : ajView(week, m) + consoleView(week, m));
   else {
     S.ui.settingsOpen = true;
     html += `<h2 class="view-title">Réglages</h2>` + backupBanner(reg) + settingsView(week, reg) + aideView()
@@ -1896,6 +1959,12 @@ $("#app").addEventListener("click", e => {
       toast("Sauvegarde restaurée");
       break;
     }
+    case "dispo-mode": S.ui.dispoMode = b.dataset.v; render(); window.scrollTo(0, 0); break;
+    case "copy-autre": {
+      const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.v); if(!o) return;
+      copyText(`Équipe ${o.eq} – ` + consoleText(o.week, o.m), "Liste copiée");
+      break;
+    }
     case "copy-console": {
       const text = consoleText(week, compute(week, reg));
       let p;
@@ -1987,6 +2056,16 @@ $("#app").addEventListener("change", e => {
     const box = $(".part-box"), info = $("#pt-info"), r0 = (week.remplacements || []).find(x => x.id === S.ui.part);
     if(box && info && r0) info.textContent = partInfo(r0.nom, { s: Number(box.dataset.rs), e: Number(box.dataset.re) }, Number($("#pt-s").value), Number($("#pt-e").value));
     return;
+  }
+  if(t.dataset.saisiAutre !== undefined){
+    const d = t.dataset.saisiAutre, sig = t.dataset.sig, day = sig.split("|")[0];
+    const all = clone(currentReg().saisiesAutres || {});
+    const today = dayNum(nowLocal());
+    for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
+    const list = (all[d] || []).filter(k => !k.startsWith(day + "|"));
+    if(t.checked) list.push(sig);
+    all[d] = list;
+    saveReg({ saisiesAutres: all }); render(); return;
   }
   if(t.dataset.saisi !== undefined && week){
     const sig = t.dataset.saisi, day = sig.split("|")[0];
