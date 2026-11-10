@@ -282,6 +282,14 @@ details.autre > .panel{margin-top:10px;border:0;padding:0}
 .ex-editor{display:flex;flex-direction:column;gap:10px;border-color:var(--accent)}
 .item.cons{flex-wrap:nowrap;align-items:center}
 .item.cons .item-main{flex:1 1 0;min-width:0}
+.perso-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.perso-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 4px 5px 9px;font-size:13px}
+.pp-x{border:0;background:transparent;color:inherit;font:700 15px/1 var(--body);padding:0 4px;cursor:pointer}
+.perso-btn{margin-top:6px;padding:6px 10px;font-size:13px}
+.perso-ed{display:flex;flex-direction:column;gap:8px;background:var(--sunk);border-radius:10px;padding:10px;margin-top:8px}
+.perso-ed .hours{display:flex;gap:8px;flex-wrap:wrap}
+.perso-ed .hours label{flex:1 1 120px}
+.cons.has-perso .rg{color:var(--muted)}
 .cons-ck{display:flex;flex-direction:column;gap:8px;align-items:flex-start;flex:0 0 auto}
 .pasmis{color:var(--muted)}
 .cons.skip .rg{text-decoration:line-through;color:var(--muted)}
@@ -332,7 +340,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°19)";
+const APP_VERSION = "10 nov. 2026 (n°20)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -584,13 +592,21 @@ function consoleText(week, m){
 function rangeRows(rs, saved, attrs){
   return rs.map((r, i) => {
     const skip = attrs.skip || [], sk = skip.includes(r.sig);
-    const ok = saved.includes(r.sig), stale = !ok && !sk && (saved.some(k => overlapsSig(k, r)) || skip.some(k => overlapsSig(k, r)));
+    const pmap = attrs.perso || {}, slots = pmap[r.sig] || [], hasP = slots.length > 0;
+    const ok = saved.includes(r.sig), stale = !ok && !sk && !hasP && (saved.some(k => overlapsSig(k, r)) || skip.some(k => overlapsSig(k, r)) || Object.keys(pmap).some(k => overlapsSig(k, r)));
+    const open = attrs.persoKey && S.ui.persoOpen && S.ui.persoOpen.d === attrs.persoKey && S.ui.persoOpen.sig === r.sig;
     const multi = !(Math.floor(r.s / CPD) === Math.floor((r.e - 1) / CPD) && !isMidnight(r.e));
     const fer = []; for(let d = Math.floor(r.s / CPD); d <= Math.floor((r.e - 1) / CPD); d++) if(ferie(d)) fer.push(d);
-    return `<div class="item cons${ok ? " done" : ""}${sk ? " skip" : ""}">
+    const pBlock = attrs.persoKey ? `
+        ${hasP ? `<div class="perso-list"><span class="item-sub">Tu te mets :</span>${slots.map((x, j) => `<span class="pill p-oui perso-pill tnum">${esc(rangeTxt(x))}<button type="button" class="pp-x" data-act="perso-rm" data-d="${attrs.persoKey}" data-sig="${esc(r.sig)}" data-i="${j}" aria-label="Retirer ce créneau">×</button></span>`).join("")}</div>` : ""}
+        ${open ? `<div class="perso-ed">
+          <div class="hours"><label for="pp-s">De<select id="pp-s">${hourOptions(r.s, r.e - 1, S.ui.ppS != null ? S.ui.ppS : r.s)}</select></label><label for="pp-e">À<select id="pp-e">${hourOptions(r.s + 1, r.e, S.ui.ppE != null ? S.ui.ppE : r.e)}</select></label></div>
+          <div class="actions"><button type="button" class="btn small primary" data-act="perso-add" data-d="${attrs.persoKey}" data-sig="${esc(r.sig)}">Ajouter ce créneau</button><button type="button" class="btn small ghost" data-act="perso-close">Fermer</button></div>
+        </div>` : `<div><button type="button" class="btn small ghost perso-btn" data-act="perso-open" data-d="${attrs.persoKey}" data-sig="${esc(r.sig)}">${hasP ? "Ajouter des horaires" : "Horaires perso"}</button></div>`}` : "";
+    return `<div class="item cons${ok || hasP ? " done" : ""}${sk ? " skip" : ""}${hasP ? " has-perso" : ""}">
       <div class="item-main">
         <div class="rg tnum"><span class="rg-a">${esc(fmtDay(r.s))} <b>${consH(r.s)}</b></span><span class="rg-arrow">→</span><span class="rg-b">${multi ? esc(fmtDay(r.e)) + " " : ""}<b>${consH(r.e)}</b></span></div>
-        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}${sk ? `<span class="pill p-non">Pas mis volontairement</span>` : ""}</div>
+        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}${sk ? `<span class="pill p-non">Pas mis volontairement</span>` : ""}${hasP ? `<span class="pill p-peut">Horaires perso</span>` : ""}</div>${pBlock}
       </div>
       <div class="cons-ck">
         <label class="chk saisi" for="${attrs.idp}-${i}"><input type="checkbox" id="${attrs.idp}-${i}" ${attrs.data(r)}${ok ? " checked" : ""}> Saisi</label>
@@ -1066,12 +1082,14 @@ function autresView(reg){
   const sa = reg.saisiesAutres || {};
   const cards = list.map((o, i) => {
     const rs = dispoRanges(o.m), done = (sa[o.d] || []), skip = ((reg.nonMisAutres || {})[o.d] || []);
-    const nDone = rs.filter(r => done.includes(r.sig)).length, nSkip = rs.filter(r => skip.includes(r.sig)).length;
+    const pmap = ((reg.persoAutres || {})[o.d]) || {};
+    const nDone = rs.filter(r => done.includes(r.sig) || (pmap[r.sig] || []).length).length, nSkip = rs.filter(r => skip.includes(r.sig)).length;
+    const misH = rs.reduce((t, r) => t + (done.includes(r.sig) ? r.e - r.s : (pmap[r.sig] || []).reduce((u, x) => u + x.e - x.s, 0)), 0) / CPH;
     const open = (S.ui.acc || {})["autre-" + o.d] ?? (i === 0);
-    const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"`, skip, skipData: r => `data-pasmis-autre="${o.d}" data-sig="${esc(r.sig)}"` });
+    const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"`, skip, skipData: r => `data-pasmis-autre="${o.d}" data-sig="${esc(r.sig)}"`, perso: pmap, persoKey: o.d });
     const pct = o.totalH ? Math.round(o.dispoH / o.totalH * 100) : 0;
     return `<details class="acc autre" data-acc="autre-${o.d}"${open ? " open" : ""}>
-      <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${rs.length} saisies${nSkip ? ` · ${nSkip} pas mise${nSkip > 1 ? "s" : ""}` : ""}</small></span></summary>
+      <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${rs.length} saisies${nSkip ? ` · ${nSkip} pas mise${nSkip > 1 ? "s" : ""}` : ""}${misH ? ` · ${fmtNum(misH)} h mises` : ""}</small></span></summary>
       <div class="meter dispo-meter" role="img" aria-label="${pct} % de dispo"><span style="width:${pct}%"></span></div>
       <div class="panel list">${rows}<div class="addrow" style="align-items:center"><button type="button" class="btn small" data-act="copy-autre" data-v="${o.d}">Copier la liste</button></div></div>
     </details>`;
@@ -2217,9 +2235,37 @@ $("#app").addEventListener("click", e => {
       else { const ind = clone(reg.indispos || {}); for(const k of Object.keys(ind)){ ind[k] = ind[k].filter(x => (x.g || x.id) !== gk); if(!ind[k].length) delete ind[k]; } saveReg({ indispos: ind }); }
       render(); toast("Indispo supprimée"); break;
     }
+    case "perso-open": S.ui.persoOpen = { d: b.dataset.d, sig: b.dataset.sig }; S.ui.ppS = null; S.ui.ppE = null; render(); break;
+    case "perso-close": S.ui.persoOpen = null; render(); break;
+    case "perso-add": {
+      const d = b.dataset.d, sig = b.dataset.sig, R = rangeBounds(sig);
+      const s0 = Number(($("#pp-s") || {}).value), e0 = Number(($("#pp-e") || {}).value);
+      if(!(e0 > s0)){ toast("L'heure de fin doit être après le début"); return; }
+      const s1 = Math.max(s0, R.s), e1 = Math.min(e0, R.e);
+      const all = clone(reg.persoAutres || {}), today = dayNum(nowLocal());
+      for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
+      const m = all[d] = all[d] || {};
+      const list = (m[sig] || []).concat([{ s: s1, e: e1 }]).sort((x, y) => x.s - y.s);
+      const merged = []; for(const x of list){ const l = merged[merged.length - 1]; if(l && x.s <= l.e) l.e = Math.max(l.e, x.e); else merged.push({ ...x }); }
+      m[sig] = merged;
+      const sa = clone(reg.saisiesAutres || {}), nm = clone(reg.nonMisAutres || {});
+      sa[d] = (sa[d] || []).filter(k => k !== sig); nm[d] = (nm[d] || []).filter(k => k !== sig);
+      saveReg({ persoAutres: all, saisiesAutres: sa, nonMisAutres: nm });
+      S.ui.ppS = null; S.ui.ppE = null; render(); toast(`Noté : ${rangeTxt({ s: s1, e: e1 })}`);
+      break;
+    }
+    case "perso-rm": {
+      const d = b.dataset.d, sig = b.dataset.sig, i = Number(b.dataset.i);
+      const all = clone(reg.persoAutres || {}); if(!all[d] || !all[d][sig]) return;
+      all[d][sig].splice(i, 1); if(!all[d][sig].length) delete all[d][sig];
+      saveReg({ persoAutres: all }); render(); toast("Créneau retiré"); break;
+    }
     case "copy-autre": {
       const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.v); if(!o) return;
-      copyText(`Équipe ${o.eq} – ` + consoleText(o.week, o.m), "Liste copiée");
+      const sk = ((reg.nonMisAutres || {})[o.d]) || [], pm = ((reg.persoAutres || {})[o.d]) || {};
+      const lines = [];
+      for(const r of dispoRanges(o.m)){ if(sk.includes(r.sig)) continue; const ps = pm[r.sig] || []; (ps.length ? ps : [r]).forEach(x => lines.push("• " + rangeTxt(x))); }
+      copyText(`Équipe ${o.eq} – Dispos à saisir, garde ${weekRange(o.week)}\n` + (lines.length ? lines.join("\n") : "Rien à saisir."), "Liste copiée");
       break;
     }
     case "copy-console": {
@@ -2319,8 +2365,9 @@ $("#app").addEventListener("change", e => {
     const nm = clone(currentReg().nonMisAutres || {}), sa = clone(currentReg().saisiesAutres || {}), today = dayNum(nowLocal());
     for(const k of Object.keys(nm)) if(dayNum(k) < today - 14) delete nm[k];
     nm[d] = saveRangeSaisie(nm[d], sig, t.checked);
-    if(t.checked) sa[d] = (sa[d] || []).filter(k => k !== sig);
-    saveReg({ nonMisAutres: nm, saisiesAutres: sa }); render(); return;
+    const pa = clone(currentReg().persoAutres || {});
+    if(t.checked){ sa[d] = (sa[d] || []).filter(k => k !== sig); if(pa[d]) delete pa[d][sig]; }
+    saveReg({ nonMisAutres: nm, saisiesAutres: sa, persoAutres: pa }); render(); return;
   }
   if(t.dataset.saisiAutre !== undefined){
     const d = t.dataset.saisiAutre, sig = t.dataset.sig, day = sig.split("|")[0];
@@ -2328,7 +2375,7 @@ $("#app").addEventListener("change", e => {
     const today = dayNum(nowLocal());
     for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
     all[d] = saveRangeSaisie(all[d], sig, t.checked);
-    if(t.checked){ const nm = clone(currentReg().nonMisAutres || {}); nm[d] = (nm[d] || []).filter(k => k !== sig); saveReg({ nonMisAutres: nm }); }
+    if(t.checked){ const nm = clone(currentReg().nonMisAutres || {}); nm[d] = (nm[d] || []).filter(k => k !== sig); const pa = clone(currentReg().persoAutres || {}); if(pa[d]) delete pa[d][sig]; saveReg({ nonMisAutres: nm, persoAutres: pa }); }
     saveReg({ saisiesAutres: all }); render(); return;
   }
   if(t.dataset.saisi !== undefined && week){
@@ -2352,6 +2399,7 @@ $("#app").addEventListener("change", e => {
     const c = clone(currentReg().cycle), L = Math.min(70, Math.max(1, Math.round(Number(t.value) || 7)));
     c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
   }
+  if(t.id === "pp-s" || t.id === "pp-e"){ S.ui[t.id === "pp-s" ? "ppS" : "ppE"] = Number(t.value); return; }
   if(t.id === "ex-multi"){ S.ui.exMulti = t.checked; render(); return; }
   if(t.id === "in-multi"){ S.ui.inMulti = t.checked; render(); return; }
   if(t.id === "in-fin"){ S.ui.inFin = t.value; return; }
