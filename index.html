@@ -244,6 +244,30 @@ details.autre[open] > .meter{margin-top:10px}
 details.autre > .panel{margin-top:10px;border:0;padding:0}
 .dispo-meter{background:var(--sunk)}
 .dispo-meter span{background:var(--dispo)}
+.seg-mode .chip{padding:10px 6px}
+.cal{display:flex;flex-direction:column;gap:10px;padding:12px}
+.cal-head{display:flex;align-items:center;justify-content:space-between}
+.cal-head b{font:700 18px/1 var(--display);text-transform:uppercase;letter-spacing:.04em}
+.cal-head .btn{font-size:20px;padding:4px 14px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-w{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center;padding-bottom:2px}
+.cal-d{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0 7px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer;min-width:0}
+.cal-n{font-size:11px;color:var(--muted)}
+.cal-d b{font:700 16px/1 var(--display)}
+.cal-d.c-M,.cal-d.c-A,.cal-d.c-J,.cal-d.c-X{background:var(--dispo);color:var(--on-dispo);border-color:transparent}
+.cal-d.c-N{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.cal-d.c-M .cal-n,.cal-d.c-A .cal-n,.cal-d.c-J .cal-n,.cal-d.c-X .cal-n{color:var(--on-dispo)}
+.cal-d.c-N .cal-n{color:var(--on-accent)}
+.cal-d.c-R b,.cal-d.c-0 b{color:var(--muted)}
+.cal-d.ex{outline:2.5px solid var(--wait);outline-offset:-2.5px}
+.cal-d.gd::after{content:"";position:absolute;left:22%;right:22%;bottom:3px;height:3px;border-radius:2px;background:var(--gap)}
+.cal-d.today .cal-n{font-weight:800;text-decoration:underline}
+.cal-d.sel{box-shadow:0 0 0 3px var(--accent)}
+.lg-ex,.lg-gd{display:inline-block;width:14px;height:10px;border-radius:3px}
+.lg-ex{outline:2px solid var(--wait);outline-offset:-2px}
+.legend b.lg-gd{height:4px;width:14px;border-radius:2px;background:var(--gap)}
+.legend b.lg-ex{width:14px;height:12px;background:transparent}
+.ex-editor{display:flex;flex-direction:column;gap:10px;border-color:var(--accent)}
 .view-title{font:700 24px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
 .view-reglages #reg-det > summary{display:none}
 .view-reglages #reg-det > .set:first-of-type{margin-top:0}
@@ -287,7 +311,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°13)";
+const APP_VERSION = "10 nov. 2026 (n°14)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -311,7 +335,7 @@ const DEFAULT_REG = {
   contacts: [],
   semaineActive: null
 };
-const POSTE = { M: "Matin", A: "Après-midi", N: "Nuit", J: "Journée", R: "Repos" };
+const POSTE = { M: "Matin", A: "Après-midi", N: "Nuit", J: "Journée", R: "Repos", X: "Horaires perso" };
 const STATUTS = { attente: "En attente", oui: "Oui", peut: "Peut-être", non: "Non" };
 const JOURS = ["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
 const JOURS_L = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
@@ -356,6 +380,16 @@ function cycleCode(d, reg){
   if(!motif.length) return "";
   const i = (((d - dayNum(c.ancre)) % motif.length) + motif.length) % motif.length;
   return motif[i];
+}
+function posteDuJour(d, reg){
+  const hrs = (reg.cycle && reg.cycle.horaires) || {};
+  const ex = (reg.exceptions || {})[dayStr(d)];
+  if(ex && ex.code){
+    const hor = ex.code === "X" ? `${ex.de || ""}-${ex.a || ""}` : ex.code === "R" ? "" : hrs[ex.code];
+    return { code: ex.code, ex, hor };
+  }
+  const code = cycleCode(d, reg);
+  return { code, ex: null, hor: code && code !== "R" ? hrs[code] : "" };
 }
 function periodesOf(week){ return Array.isArray(week.periodes) && week.periodes.length ? week.periodes : [{ debut: week.debut, fin: week.fin }]; }
 function periodsFor(day, reg){
@@ -409,11 +443,10 @@ function compute(week, reg){
   for(const p of periodes) for(let h = hFloor(p.debut); h < hCeil(p.fin); h++) if(inPlage(h)) cells.set(h, { busy: null, cover: null, rid: null });
 
   const cyc = reg.cycle || {};
-  if(cyc.actif !== false && cyc.ancre){
+  {
     const tr = Number(cyc.trajetMin) || 0;
     for(let d = Math.floor(g0 / CPD) - 1; d <= Math.floor((g1 - 1) / CPD); d++){
-      const code = cycleCode(d, reg);
-      const hor = cyc.horaires && cyc.horaires[code];
+      const pj = posteDuJour(d, reg), code = pj.code, hor = pj.hor;
       if(!hor || !RX_PLAGE.test(hor)) continue;
       let [s, e] = hor.split("-").map(hm);
       if(e <= s) e += 1440;
@@ -421,7 +454,7 @@ function compute(week, reg){
       const sm = d * 1440 + s - tr, em = d * 1440 + e + tr;
       for(let h = Math.floor(sm / U); h < Math.ceil(em / U); h++){
         const c = cells.get(h);
-        if(c) c.busy = { kind: "poste", code, label: POSTE[code] || code };
+        if(c) c.busy = { kind: "poste", code, label: pj.ex ? (pj.ex.note || POSTE[code] || "Travail") : (POSTE[code] || code) };
       }
     }
   }
@@ -876,7 +909,7 @@ function boardView(m, reg){
       const last = segs[segs.length - 1];
       if(last && last.st === st && last.lbl === lbl && last.rid === rid) last.n++; else segs.push({ st, lbl, n: 1, h, rid });
     }
-    const date = new Date(d * 86400000), code = cycleCode(d, reg);
+    const date = new Date(d * 86400000), code = posteDuJour(d, reg).code;
     const segHtml = segs.map(sg => {
       const w = (sg.n / CPD * 100).toFixed(4);
       const txt = sg.n >= 3 * CPH && sg.lbl ? `<i>${esc(sg.lbl)}</i>` : "";
@@ -993,10 +1026,62 @@ function autresView(reg){
 }
 function dispoModeChips(){
   const m = S.ui.dispoMode || "moi";
-  return `<div class="chips seg-mode" role="radiogroup" aria-label="Quelles dispos">
-    <button type="button" class="chip${m === "moi" ? " on" : ""}" role="radio" aria-checked="${m === "moi"}" data-act="dispo-mode" data-v="moi">Ma garde</button>
-    <button type="button" class="chip${m === "autres" ? " on" : ""}" role="radio" aria-checked="${m === "autres"}" data-act="dispo-mode" data-v="autres">Autres équipes</button>
-  </div>`;
+  const c = (v, l) => `<button type="button" class="chip${m === v ? " on" : ""}" role="radio" aria-checked="${m === v}" data-act="dispo-mode" data-v="${v}">${l}</button>`;
+  return `<div class="chips seg-mode" role="radiogroup" aria-label="Quelles dispos">${c("moi", "Ma garde")}${c("autres", "Autres équipes")}${c("travail", "Mon travail")}</div>`;
+}
+const MOIS_LONG = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+function joursDeGarde(reg, d0, d1){
+  const set = new Set();
+  const mark = per => { for(const p of per){ const a = Math.floor(parseLocal(p.debut) / 1440), b = Math.floor((parseLocal(p.fin) - 1) / 1440); for(let d = a; d <= b; d++) set.add(d); } };
+  for(const w of S.weeks) if(!(w.remplacements || []).some(r => r.echange)) mark(periodesOf(w));
+  for(const g of gardeDays(reg, d0 - 14, 4)) if(!S.weeks.some(w => w.id === g)) mark(periodsFor(g, reg));
+  return set;
+}
+function travailView(reg){
+  const today = dayNum(nowLocal());
+  const mk = S.ui.calMonth || nowLocal().slice(0, 7);
+  const [Y, M] = mk.split("-").map(Number);
+  const first = Date.UTC(Y, M - 1, 1) / 86400000, nb = new Date(Date.UTC(Y, M, 0)).getUTCDate();
+  const lead = (new Date(first * 86400000).getUTCDay() + 6) % 7;
+  const gd = joursDeGarde(reg, first, first + nb);
+  let cells = "";
+  for(let i = 0; i < lead; i++) cells += `<span class="cal-x"></span>`;
+  for(let n = 1; n <= nb; n++){
+    const d = first + n - 1, pj = posteDuJour(d, reg), code = pj.code || "", lab = code === "X" ? "H" : (code || "·");
+    const cls = ["cal-d", "c-" + (code || "0"), pj.ex ? "ex" : "", gd.has(d) ? "gd" : "", d === today ? "today" : "", S.ui.exDay === dayStr(d) ? "sel" : ""].filter(Boolean).join(" ");
+    cells += `<button type="button" class="${cls}" data-act="cal-day" data-v="${dayStr(d)}" aria-label="${esc(fmtDay(d * CPD, true))} : ${esc(POSTE[code] || "rien")}${pj.ex ? " (changement exceptionnel)" : ""}${gd.has(d) ? ", de garde" : ""}"><span class="cal-n">${n}</span><b>${esc(lab)}</b></button>`;
+  }
+  let editor = "";
+  if(S.ui.exDay){
+    const d = dayNum(S.ui.exDay), pj = posteDuJour(d, reg), base = cycleCode(d, reg), ex = pj.ex;
+    const choix = S.ui.exChoix || (ex ? ex.code : "cycle");
+    const opts = [["cycle", `Mon cycle (${POSTE[base] || "rien"})`], ["R", "Repos / congé"], ["M", "Matin"], ["A", "Après-midi"], ["N", "Nuit"], ["J", "Journée"], ["X", "Autres horaires"]];
+    const hrs = (reg.cycle && reg.cycle.horaires) || {};
+    const de = S.ui.exDe || (ex && ex.de) || "08:00", a = S.ui.exA || (ex && ex.a) || "17:00";
+    const hor = choix === "X" ? `${de}-${a}` : choix === "cycle" ? (base && base !== "R" ? hrs[base] : "") : choix === "R" ? "" : hrs[choix];
+    const effet = hor && RX_PLAGE.test(hor) ? (() => { const [x, y] = hor.split("-"); return `Pas dispo pour la garde de ${fmtHM(x)} à ${fmtHM(y)}${hm(y) <= hm(x) ? " le lendemain" : ""}.`; })() : "Dispo pour la garde toute la journée.";
+    editor = `<div class="panel ex-editor" id="ex-editor">
+      <div class="line1"><b>${esc(cap(fmtDay(d * CPD, true)))}</b>${gd.has(d) ? `<span class="pill p-peut">Jour de garde</span>` : ""}</div>
+      <div class="chips" role="radiogroup" aria-label="Poste ce jour-là">${opts.map(([v, l]) => `<button type="button" class="chip${choix === v ? " on" : ""}" role="radio" aria-checked="${choix === v}" data-act="ex-choix" data-v="${v}">${esc(l)}</button>`).join("")}</div>
+      ${choix === "X" ? `<div class="hr-row"><span class="hr-l">Horaires</span><select id="ex-de" aria-label="De">${hourSelOpts(de)}</select><span class="gm-l">→</span><select id="ex-a" aria-label="À">${hourSelOpts(a)}</select></div>` : ""}
+      ${choix !== "cycle" ? `<label for="ex-note">Pourquoi (facultatif)<input type="text" id="ex-note" autocomplete="off" placeholder="Formation, remplacement au boulot, congé…" value="${esc(S.ui.exNote != null ? S.ui.exNote : (ex && ex.note) || "")}"></label>` : ""}
+      <p class="item-sub" style="margin:0">${esc(effet)} Tes trous de garde et tes dispos se recalculent tout seuls.</p>
+      <div class="actions"><button type="button" class="btn primary" data-act="ex-save">Enregistrer</button><button type="button" class="btn ghost" data-act="ex-close">Fermer</button></div>
+    </div>`;
+  }
+  const exs = Object.entries(reg.exceptions || {}).filter(([k]) => dayNum(k) >= today).sort((x, y) => dayNum(x[0]) - dayNum(y[0]));
+  const list = exs.map(([k, ex]) => { const h = ex.code === "X" ? ` ${fmtHM(ex.de)} → ${fmtHM(ex.a)}` : ""; return `<div class="item"><div class="item-main"><span class="who">${esc(cap(fmtDay(dayNum(k) * CPD, true)))}</span><span class="item-sub">${esc(POSTE[ex.code] || ex.code)}${esc(h)}${ex.note ? " · " + esc(ex.note) : ""} <span class="muted">(au lieu de : ${esc(POSTE[cycleCode(dayNum(k), reg)] || "rien")})</span></span></div><button type="button" class="chip x" data-act="ex-rm" data-v="${k}" aria-label="Revenir au cycle normal">×</button></div>`; }).join("");
+  return `<section class="sec"><h2>Mon travail</h2>
+    <p class="muted" style="margin:0;font-size:14px">Ton poste de chaque jour selon ton cycle. Touche un jour pour noter un changement exceptionnel (formation, remplacement au boulot, congé…) : ton cycle enregistré ne change pas.</p>
+    <div class="panel cal">
+      <div class="cal-head"><button type="button" class="btn small ghost" data-act="cal-prev" aria-label="Mois précédent">‹</button><b>${cap(MOIS_LONG[M - 1])} ${Y}</b><button type="button" class="btn small ghost" data-act="cal-next" aria-label="Mois suivant">›</button></div>
+      <div class="cal-grid">${["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map(j => `<span class="cal-w">${j}</span>`).join("")}${cells}</div>
+      <div class="legend"><span>M matin · A après-midi · N nuit · J journée · H horaires perso · R repos</span><span><b class="lg-ex"></b>Changement exceptionnel</span><span><b class="lg-gd"></b>Jour de garde</span></div>
+    </div>
+    ${editor}
+    <h3>Changements à venir</h3>
+    <div class="panel list">${list || `<div class="item"><span class="muted">Aucun changement exceptionnel prévu.</span></div>`}</div>
+  </section>`;
 }
 function ajView(week, m){
   const ro = S.readOnly ? " disabled" : "";
@@ -1616,7 +1701,7 @@ function render(){
   else if(view === "entraide") html += entraideView(reg);
   else if(view === "messages") html += messagesView(m, week, reg);
   else if(view === "reponses") html += rpView(week, m, reg) + suiviView(week);
-  else if(view === "dispos") html += dispoModeChips() + ((S.ui.dispoMode || "moi") === "autres" ? autresView(reg) : ajView(week, m) + consoleView(week, m));
+  else if(view === "dispos"){ const dm = S.ui.dispoMode || "moi"; html += dispoModeChips() + (dm === "autres" ? autresView(reg) : dm === "travail" ? travailView(reg) : ajView(week, m) + consoleView(week, m)); }
   else {
     S.ui.settingsOpen = true;
     html += `<h2 class="view-title">Réglages</h2>` + backupBanner(reg) + settingsView(week, reg) + aideView()
@@ -1960,6 +2045,37 @@ $("#app").addEventListener("click", e => {
       break;
     }
     case "dispo-mode": S.ui.dispoMode = b.dataset.v; render(); window.scrollTo(0, 0); break;
+    case "cal-prev": case "cal-next": {
+      const mk = S.ui.calMonth || nowLocal().slice(0, 7); let [Y, M] = mk.split("-").map(Number);
+      M += act === "cal-next" ? 1 : -1; if(M < 1){ M = 12; Y--; } if(M > 12){ M = 1; Y++; }
+      S.ui.calMonth = `${Y}-${String(M).padStart(2, "0")}`; render(); break;
+    }
+    case "cal-day": {
+      S.ui.exDay = b.dataset.v; S.ui.exChoix = null; S.ui.exNote = null; S.ui.exDe = null; S.ui.exA = null; render();
+      requestAnimationFrame(() => { const el = $("#ex-editor"); if(el) el.scrollIntoView({ behavior: "auto", block: "nearest" }); });
+      break;
+    }
+    case "ex-choix": S.ui.exChoix = b.dataset.v; render(); break;
+    case "ex-close": S.ui.exDay = null; render(); break;
+    case "ex-save": {
+      const day = S.ui.exDay; if(!day) return;
+      const d = dayNum(day), ex0 = (reg.exceptions || {})[day];
+      const choix = S.ui.exChoix || (ex0 ? ex0.code : "cycle");
+      const note = (($("#ex-note") || {}).value || "").trim();
+      const all = clone(reg.exceptions || {});
+      for(const k of Object.keys(all)) if(dayNum(k) < dayNum(nowLocal()) - 90) delete all[k];
+      if(choix === "cycle" || (choix === cycleCode(d, reg) && !note)) delete all[day];
+      else {
+        const e = { code: choix, note };
+        if(choix === "X"){ e.de = ($("#ex-de") || {}).value || "08:00"; e.a = ($("#ex-a") || {}).value || "17:00"; }
+        all[day] = e;
+      }
+      saveReg({ exceptions: all });
+      S.ui.exDay = null; render();
+      toast(all[day] ? `Noté : ${fmtDay(d * CPD)} en ${POSTE[all[day].code].toLowerCase()}` : `${fmtDay(d * CPD)} : retour au cycle normal`);
+      break;
+    }
+    case "ex-rm": { const all = clone(reg.exceptions || {}); delete all[b.dataset.v]; saveReg({ exceptions: all }); render(); toast("Retour au cycle normal"); break; }
     case "copy-autre": {
       const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.v); if(!o) return;
       copyText(`Équipe ${o.eq} – ` + consoleText(o.week, o.m), "Liste copiée");
@@ -2091,6 +2207,7 @@ $("#app").addEventListener("change", e => {
     const c = clone(currentReg().cycle), L = Math.min(70, Math.max(1, Math.round(Number(t.value) || 7)));
     c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
   }
+  if(t.id === "ex-de" || t.id === "ex-a"){ S.ui[t.id === "ex-de" ? "exDe" : "exA"] = t.value; render(); return; }
   if(t.id === "bl-year"){ S.ui.year = Number(t.value); render(); return; }
   if(t.id === "g-eq"){
     const v = t.value;
@@ -2149,6 +2266,7 @@ $("#app").addEventListener("change", e => {
 $("#app").addEventListener("input", e => {
   const t = e.target;
   if(t.id === "su-nom"){ if(S.ui.su) S.ui.su.nom = t.value; return; }
+  if(t.id === "ex-note"){ S.ui.exNote = t.value; return; }
   if(t.id === "rp-txt") S.ui.rpTxt = t.value;
   else if(t.id === "rp-nom") S.ui.rpNom = t.value;
 });
