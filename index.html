@@ -113,6 +113,29 @@ label > input,label > select{color:var(--ink);font-size:15px}
 .s-trou{background:var(--gap);color:var(--on-gap);cursor:pointer}
 .s-cover{background:var(--cover);color:var(--on-cover)}
 .a-ast{background:var(--cover);color:var(--on-cover)}
+.bl-kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bl-kpis > div{display:flex;flex-direction:column;gap:2px}
+.bl-kpis .big{font-size:44px}
+.big.bl-n{color:var(--accent)}
+.view-bilan .weekbar{display:none}
+.bl-chart{display:flex;flex-direction:column;gap:16px}
+.bl-eq{display:flex;flex-direction:column;gap:6px}
+.bl-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bl-bar{display:flex;align-items:center;gap:8px;height:22px}
+.bl-bar span{display:block;height:100%;border-radius:5px;min-width:3px}
+.bl-bar em{font-style:normal;font-weight:600;font-size:13px;white-space:nowrap}
+.bl-mis{background:var(--accent)}
+.bl-ast{background:var(--cover)}
+.legend b.bl-mis,.legend b.bl-ast{display:inline-block}
+.bl-tblw{overflow-x:auto}
+.bl-tbl{width:100%;border-collapse:collapse;font-size:14px}
+.bl-tbl th{font-size:12px;font-weight:600;color:var(--muted);text-align:left;padding:0 6px 8px;border-bottom:1px solid var(--line)}
+.bl-tbl td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+.bl-tbl .num{text-align:right;white-space:nowrap}
+.bl-tbl tfoot td{font-weight:700;border-bottom:0}
+.bl-tbl .bl-futur td{color:var(--muted)}
+.bl-tbl .pill{font-size:11px;padding:2px 6px}
+.bl-tbl .chip.x{padding:2px 7px;margin-left:4px}
 .a-mis{background:var(--accent);color:var(--on-accent)}
 .a-libre{background:var(--dispo);color:var(--on-dispo)}
 .a-pas{background:repeating-linear-gradient(135deg,var(--dispo) 0 5px,var(--sunk) 5px 9px);color:var(--muted)}
@@ -223,7 +246,7 @@ button.p-relance{padding:4px 8px;border-radius:99px}
 .loading{padding:40px 0;text-align:center;color:var(--muted)}
 
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
 .tb{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 1px 8px;border:0;background:transparent;color:var(--muted);font:600 10.5px/1.1 var(--body);cursor:pointer;min-width:0;letter-spacing:-.01em}
 .tb svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tb.on{color:var(--accent)}
@@ -352,7 +375,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°22)";
+const APP_VERSION = "10 nov. 2026 (n°23)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -1692,10 +1715,115 @@ function autresGardeView(reg){
   </div></section>`;
   return `<div class="ag-sel">${sel}</div>` + summary + board + astSec + chefSec + msgSec;
 }
+/* ---------- Bilan : heures mises dispo vs astreintes, par équipe ---------- */
+const GARDE_HISTO = 800; // jours d'historique gardés pour le bilan
+function equipeDeGarde(d){
+  const n = dayNum(d), step = (CENTRE.semaines || 4) * 7;
+  for(const [k, a] of Object.entries(CENTRE.equipes)) if((((n - dayNum(a)) % step) + step) % step === 0) return k;
+  return "";
+}
+function gardeBornes(d, eq){
+  const per = periodsFor(d, { garde: gardeEquipe(eq) });
+  if(!per.length) return { debut: d + "T00:00", fin: dayStr(dayNum(d) + 7) + "T00:00" };
+  return { debut: per[0].debut, fin: per.reduce((x, p) => parseLocal(p.fin) > parseLocal(x) ? p.fin : x, per[0].fin) };
+}
+function dateCourte(d){ const t = new Date(dayNum(d) * 86400000), y = t.getUTCFullYear(); return `${dn(t.getUTCDate())} ${MOIS[t.getUTCMonth()]}${y !== new Date(dayNum(nowLocal()) * 86400000).getUTCFullYear() ? " " + y : ""}`; }
+function bilanGardes(reg){
+  const mine = equipeOf(reg); if(!mine) return null;
+  const sa = reg.saisiesAutres || {}, pa = reg.persoAutres || {}, pn = reg.persoNotesAutres || {}, as = reg.astreintes || {}, man = reg.bilanManuel || {};
+  const days = new Set([...Object.keys(sa), ...Object.keys(pa), ...Object.keys(as), ...Object.keys(man)]);
+  const now = parseLocal(nowLocal()), out = [];
+  for(const d of days){
+    const eq = (man[d] && man[d].eq) || equipeDeGarde(d) || ((as[d] || [])[0] || {}).eq;
+    if(!eq || eq === mine) continue;
+    let misH, astH;
+    if(man[d]){ misH = Number(man[d].misH) || 0; astH = Number(man[d].astH) || 0; }
+    else {
+      const mis = new Set(), ast = new Set();
+      for(const sig of (sa[d] || [])){ const r = rangeBounds(sig); for(let h = r.s; h < r.e; h++) mis.add(h); }
+      for(const [sig, slots] of Object.entries(pa[d] || {})) if(persoNote(pn[d], sig, slots) === "ok") for(const x of slots) for(let h = x.s; h < x.e; h++) mis.add(h);
+      for(const a of (as[d] || [])){ const sl = slotOf(a); for(let h = sl.s; h < sl.e; h++) ast.add(h); }
+      misH = mis.size / CPH; astH = ast.size / CPH;
+    }
+    if(!misH && !astH) continue;
+    const b = gardeBornes(d, eq);
+    out.push({ d, eq, ...b, misH, astH, manuel: !!man[d], statut: parseLocal(b.debut) > now ? "avenir" : parseLocal(b.fin) > now ? "encours" : "fini" });
+  }
+  return out.sort((x, y) => dayNum(y.d) - dayNum(x.d));
+}
+const BILAN_PER = [["3", "3 mois", 92], ["6", "6 mois", 183], ["12", "1 an", 366], ["tout", "Tout", 0]];
+function bilanStats(reg){
+  const all = bilanGardes(reg); if(all == null) return null;
+  const per = BILAN_PER.find(x => x[0] === (S.ui.bilanPer || "tout")) || BILAN_PER[3], today = dayNum(nowLocal());
+  const rows = all.filter(r => !per[2] || dayNum(r.d) >= today - per[2]);
+  const comptees = rows.filter(r => r.statut !== "avenir");
+  const eqs = Object.keys(CENTRE.equipes).filter(k => k !== equipeOf(reg));
+  const parEq = eqs.map(eq => {
+    const l = comptees.filter(r => r.eq === eq);
+    return { eq, gardes: l.length, misH: l.reduce((t, r) => t + r.misH, 0), astH: l.reduce((t, r) => t + r.astH, 0), avecAst: l.filter(r => r.astH > 0).length };
+  });
+  const tot = { gardes: comptees.length, misH: comptees.reduce((t, r) => t + r.misH, 0), astH: comptees.reduce((t, r) => t + r.astH, 0), avecAst: comptees.filter(r => r.astH > 0).length };
+  return { per, rows, comptees, parEq, tot, avenir: rows.filter(r => r.statut === "avenir") };
+}
+const pctOf = (a, b) => b ? Math.round(a / b * 100) : 0;
+function bilanTexte(reg, st){
+  const first = st.comptees.length ? st.comptees[st.comptees.length - 1] : null;
+  const lignes = st.parEq.map(x => `• Équipe ${x.eq} : ${x.gardes} garde${x.gardes > 1 ? "s" : ""}, ${fmtNum(x.misH)} h mises dispo, ${fmtNum(x.astH)} h d'astreinte (${pctOf(x.astH, x.misH)} %)${x.gardes ? `, astreinte sur ${x.avecAst} garde${x.avecAst > 1 ? "s" : ""} sur ${x.gardes}` : ""}`);
+  return `Bilan de mes dispos sur les autres équipes – ${CENTRE.nom}${first ? `, depuis le ${dateCourte(first.d)}` : ""}\n` + lignes.join("\n") +
+    `\nTotal : ${fmtNum(st.tot.misH)} h mises dispo, ${fmtNum(st.tot.astH)} h d'astreinte (${pctOf(st.tot.astH, st.tot.misH)} %).`;
+}
+function bilanView(reg){
+  const st = bilanStats(reg);
+  if(st == null) return `<h2 class="view-title">Bilan</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde pour voir ton bilan sur les autres équipes.</p></div>`;
+  const ro = S.readOnly ? " disabled" : "";
+  const perChips = `<div class="chips seg-mode" role="radiogroup" aria-label="Période">${BILAN_PER.map(([v, l]) => `<button type="button" class="chip${st.per[0] === v ? " on" : ""}" role="radio" aria-checked="${st.per[0] === v}" data-act="bilan-per" data-v="${v}">${l}</button>`).join("")}</div>`;
+  const t = st.tot;
+  const resume = `<section class="panel summary" aria-label="Résumé">
+    <div class="bl-kpis"><div><span class="big tnum bl-n">${fmtNum(t.misH)}<small> h</small></span><span class="sum-lbl">mises dispo</span></div><div><span class="big tnum ok">${fmtNum(t.astH)}<small> h</small></span><span class="sum-lbl">d'astreinte</span></div></div>
+    ${t.gardes ? `<div class="sum-meta tnum"><span>${pctOf(t.astH, t.misH)} % de tes dispos utilisées</span><span>·</span><span>astreinte sur ${t.avecAst} garde${t.avecAst > 1 ? "s" : ""} sur ${t.gardes}</span></div>`
+      : `<p class="item-sub" style="margin:0">${st.avenir.length ? `Tes dispos sur ${st.avenir.length} garde${st.avenir.length > 1 ? "s" : ""} à venir seront comptées dès que la garde commence.` : "Aucune garde comptée pour l'instant."}</p>`}
+  </section>`;
+  const max = Math.max(1, ...st.parEq.map(x => Math.max(x.misH, x.astH)));
+  const chart = `<section class="sec"><h2>Par équipe</h2><div class="panel bl-chart">
+    ${st.parEq.map(x => `<div class="bl-eq">
+      <div class="bl-head"><b>Équipe ${x.eq}</b>${x.gardes && !x.astH ? `<span class="pill p-non">Jamais d'astreinte</span>` : x.gardes ? `<span class="pill p-oui">${pctOf(x.astH, x.misH)} % utilisées</span>` : ""}</div>
+      <div class="bl-bar" aria-label="Mis dispo : ${fmtNum(x.misH)} h"><span class="bl-mis" style="width:${(x.misH / max * 100).toFixed(2)}%"></span><em class="tnum">${fmtNum(x.misH)} h</em></div>
+      <div class="bl-bar" aria-label="Astreinte : ${fmtNum(x.astH)} h"><span class="bl-ast" style="width:${(x.astH / max * 100).toFixed(2)}%"></span><em class="tnum">${fmtNum(x.astH)} h</em></div>
+      <div class="item-sub tnum">${x.gardes ? `${x.gardes} garde${x.gardes > 1 ? "s" : ""} · astreinte sur ${x.avecAst}` : "Aucune garde comptée sur la période"}</div>
+    </div>`).join("")}
+    <div class="legend"><span><b class="bl-mis"></b>Mis dispo</span><span><b class="bl-ast"></b>Astreinte</span></div>
+  </div></section>`;
+  const ligne = r => `<tr${r.statut === "avenir" ? ' class="bl-futur"' : ""}><td>${esc(dateCourte(r.d))}${r.statut === "encours" ? ` <span class="pill p-attente">en cours</span>` : r.statut === "avenir" ? ` <span class="pill">à venir</span>` : ""}${r.manuel ? ` <button type="button" class="chip x" data-act="bm-rm" data-d="${r.d}" aria-label="Retirer cette garde saisie à la main"${ro}>×</button>` : ""}</td><td>${r.eq}</td><td class="num">${fmtNum(r.misH)} h</td><td class="num">${fmtNum(r.astH)} h</td><td class="num">${pctOf(r.astH, r.misH)} %</td></tr>`;
+  const table = `<section class="sec"><h2>Détail par garde</h2><div class="panel bl-tblw">${st.rows.length ? `<table class="bl-tbl tnum"><thead><tr><th>Garde du</th><th>Éq.</th><th class="num">Mis dispo</th><th class="num">Astr.</th><th class="num">%</th></tr></thead><tbody>${st.rows.map(ligne).join("")}</tbody>
+      <tfoot><tr><td colspan="2">Total</td><td class="num">${fmtNum(t.misH)} h</td><td class="num">${fmtNum(t.astH)} h</td><td class="num">${pctOf(t.astH, t.misH)} %</td></tr></tfoot></table>
+      ${st.avenir.length ? `<p class="item-sub" style="margin:8px 0 0">Les gardes à venir sont affichées mais pas comptées dans les totaux.</p>` : ""}`
+    : `<p class="muted" style="margin:0">Rien sur cette période. Les heures se remplissent quand tu coches « Saisi » dans Dispos › Autres équipes et quand tu notes tes astreintes dans Garde › Autres équipes.</p>`}
+    <div class="actions" style="margin-top:10px"><button type="button" class="btn primary" data-act="bilan-copy"${st.comptees.length ? "" : " disabled"}>Copier le bilan</button></div>
+  </div></section>`;
+  // garde passée saisie à la main
+  const today = dayNum(nowLocal()), mine = equipeOf(reg), step = (CENTRE.semaines || 4) * 7, passees = [];
+  for(const [k, a0] of Object.entries(CENTRE.equipes)){
+    if(k === mine) continue;
+    const a = dayNum(a0);
+    for(let d = a + Math.ceil((today - 366 - a) / step) * step; d <= today; d += step) passees.push({ d: dayStr(d), eq: k });
+  }
+  passees.sort((x, y) => dayNum(y.d) - dayNum(x.d));
+  const bm = S.ui.bmOpen;
+  const manuel = `<section class="sec"><h2>Gardes passées</h2><div class="panel">
+    ${bm ? `<div class="assign">
+      <label for="bm-g">Garde<select id="bm-g">${passees.map(x => `<option value="${x.d}|${x.eq}">Équipe ${x.eq} · ${esc(weekLabel(gardeBornes(x.d, x.eq)))}</option>`).join("")}</select></label>
+      <div class="hours"><label for="bm-mis">Heures mises dispo<input type="text" id="bm-mis" inputmode="decimal" autocomplete="off" placeholder="ex. 48"></label><label for="bm-ast">Heures d'astreinte<input type="text" id="bm-ast" inputmode="decimal" autocomplete="off" placeholder="ex. 12"></label></div>
+      <div class="actions"><button type="button" class="btn primary" data-act="bm-ok">Ajouter au bilan</button><button type="button" class="btn ghost" data-act="bm-cancel">Annuler</button></div>
+      <p class="item-sub" style="margin:0">Si l'appli a déjà des heures pour cette garde, ta saisie les remplace.</p>
+    </div>`
+    : `<p class="item-sub" style="margin:0 0 10px">Pour compléter le bilan avec tes gardes d'avant l'appli, à partir de ce que tu retrouves dans NexSIS.</p><button type="button" class="btn small" data-act="bm-open"${ro}>Ajouter une garde passée</button>`}
+  </div></section>`;
+  return `<h2 class="view-title">Bilan des autres équipes</h2>` + perChips + resume + chart + table + manuel;
+}
 // Ajoute des astreintes en fusionnant celles qui se chevauchent ou se touchent
 function addAstreintes(reg, d, eq, slots, note){
   const all = clone(reg.astreintes || {}), today = dayNum(nowLocal());
-  for(const k of Object.keys(all)) if(dayNum(k) < today - 60) delete all[k];
+  for(const k of Object.keys(all)) if(dayNum(k) < today - GARDE_HISTO) delete all[k];
   let list = (all[d] || []).map(a => ({ ...slotOf(a), id: a.id, eq: a.eq, note: a.note || "" }));
   for(const x of slots) list.push({ s: x.s, e: x.e, id: uid("a"), eq, note: note || "" });
   list.sort((a, b) => a.s - b.s);
@@ -1874,6 +2002,7 @@ const VIEWS = [
   { id: "reponses", label: "Réponses", icon: '<path d="M4 13l3-8h10l3 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5"/>' },
   { id: "entraide", label: "Entraide", icon: '<path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/>' },
   { id: "dispos", label: "Dispos", icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
+  { id: "bilan", label: "Bilan", icon: '<path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/>' },
   { id: "reglages", label: "Réglages", icon: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
 ];
 function goTab(view, anchor, block){
@@ -1967,6 +2096,7 @@ function render(){
     html += (S.ui.gardeMode || "moi") === "autres" ? autresGardeView(reg) : summaryView(m, week) + boardView(m, reg) + gapsView(m, week);
   }
   else if(view === "entraide") html += entraideView(reg);
+  else if(view === "bilan") html += bilanView(reg);
   else if(view === "messages") html += messagesView(m, week, reg);
   else if(view === "reponses") html += rpView(week, m, reg) + suiviView(week);
   else if(view === "dispos"){ const dm = S.ui.dispoMode || "moi"; html += dispoModeChips() + (dm === "autres" ? autresView(reg) : dm === "travail" ? travailView(reg) : ajView(week, m) + consoleView(week, m)); }
@@ -2388,6 +2518,22 @@ $("#app").addEventListener("click", e => {
       render(); toast("Indispo supprimée"); break;
     }
     case "garde-mode": S.ui.gardeMode = b.dataset.v; render(); window.scrollTo(0, 0); break;
+    case "bilan-per": S.ui.bilanPer = b.dataset.v; render(); break;
+    case "bilan-copy": { const st = bilanStats(reg); if(st) copyText(bilanTexte(reg, st), "Bilan copié"); break; }
+    case "bm-open": S.ui.bmOpen = true; render(); break;
+    case "bm-cancel": S.ui.bmOpen = false; render(); break;
+    case "bm-ok": {
+      const [d, eq] = String(($("#bm-g") || {}).value || "").split("|");
+      const num = id => { const v = String(($(id) || {}).value || "").trim().replace(",", "."); return v === "" ? 0 : Number(v); };
+      const misH = num("#bm-mis"), astH = num("#bm-ast");
+      if(!d || !eq){ toast("Choisis une garde"); return; }
+      if(!(misH >= 0 && astH >= 0) || isNaN(misH) || isNaN(astH)){ toast("Indique des heures en chiffres"); return; }
+      if(!misH && !astH){ toast("Indique au moins des heures mises dispo"); return; }
+      const all = clone(reg.bilanManuel || {}); all[d] = { eq, misH: Math.round(misH * 2) / 2, astH: Math.round(astH * 2) / 2 };
+      saveReg({ bilanManuel: all }); S.ui.bmOpen = false; render(); toast(`Garde de l'équipe ${eq} ajoutée au bilan`);
+      break;
+    }
+    case "bm-rm": { const all = clone(reg.bilanManuel || {}); delete all[b.dataset.d]; saveReg({ bilanManuel: all }); render(); toast("Garde retirée du bilan"); break; }
     case "ag-seg": {
       const s0 = Number(b.dataset.s), e0 = Number(b.dataset.e);
       const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === (S.ui.autreSel || "")) || (autresGardesDispo(reg, 6) || [])[0]; if(!o) return;
@@ -2437,7 +2583,7 @@ $("#app").addEventListener("click", e => {
       if(!(e0 > s0)){ toast("L'heure de fin doit être après le début"); return; }
       const s1 = Math.max(s0, R.s), e1 = Math.min(e0, R.e);
       const all = clone(reg.persoAutres || {}), today = dayNum(nowLocal());
-      for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
+      for(const k of Object.keys(all)) if(dayNum(k) < today - GARDE_HISTO) delete all[k];
       const m = all[d] = all[d] || {};
       const list = (m[sig] || []).concat([{ s: s1, e: e1 }]).sort((x, y) => x.s - y.s);
       const merged = []; for(const x of list){ const l = merged[merged.length - 1]; if(l && x.s <= l.e) l.e = Math.max(l.e, x.e); else merged.push({ ...x }); }
@@ -2560,7 +2706,7 @@ $("#app").addEventListener("change", e => {
     const d = t.dataset.persoSaisi, sig = t.dataset.sig, reg = currentReg();
     const slots = (((reg.persoAutres || {})[d]) || {})[sig] || [];
     const all = clone(reg.persoNotesAutres || {}), today = dayNum(nowLocal());
-    for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
+    for(const k of Object.keys(all)) if(dayNum(k) < today - GARDE_HISTO) delete all[k];
     all[d] = all[d] || {};
     if(t.checked && slots.length) all[d][sig] = persoEmpreinte(slots); else delete all[d][sig];
     saveReg({ persoNotesAutres: all }); render(); if(t.checked) toast("Noté dans NexSIS"); return;
@@ -2579,7 +2725,7 @@ $("#app").addEventListener("change", e => {
     const d = t.dataset.saisiAutre, sig = t.dataset.sig, day = sig.split("|")[0];
     const all = clone(currentReg().saisiesAutres || {});
     const today = dayNum(nowLocal());
-    for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
+    for(const k of Object.keys(all)) if(dayNum(k) < today - GARDE_HISTO) delete all[k];
     all[d] = saveRangeSaisie(all[d], sig, t.checked);
     if(t.checked){ const nm = clone(currentReg().nonMisAutres || {}); nm[d] = (nm[d] || []).filter(k => k !== sig); const pa = clone(currentReg().persoAutres || {}); if(pa[d]) delete pa[d][sig]; const pn = clone(currentReg().persoNotesAutres || {}); if(pn[d]) delete pn[d][sig]; saveReg({ nonMisAutres: nm, persoAutres: pa, persoNotesAutres: pn }); }
     saveReg({ saisiesAutres: all }); render(); return;
