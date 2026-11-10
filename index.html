@@ -261,6 +261,7 @@ details.autre > .panel{margin-top:10px;border:0;padding:0}
 .cal-d.c-R b,.cal-d.c-0 b{color:var(--muted)}
 .cal-d.c-I{background:var(--gap-soft);color:var(--gap);border-color:transparent}
 .cal-d.c-I .cal-n{color:var(--gap)}
+.cal-d.ip::before{content:"";position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:99px;background:var(--gap);box-shadow:0 0 0 1.5px var(--surface)}
 .cal-d.ex{outline:2.5px solid var(--wait);outline-offset:-2.5px}
 .cal-d.gd::after{content:"";position:absolute;left:22%;right:22%;bottom:3px;height:3px;border-radius:2px;background:var(--gap)}
 .cal-d.today .cal-n{font-weight:800;text-decoration:underline}
@@ -268,6 +269,7 @@ details.autre > .panel{margin-top:10px;border:0;padding:0}
 .lg-ex,.lg-gd{display:inline-block;width:14px;height:10px;border-radius:3px}
 .lg-ex{outline:2px solid var(--wait);outline-offset:-2px}
 .legend b.lg-gd{height:4px;width:14px;border-radius:2px;background:var(--gap)}
+.legend b.lg-ip{width:9px;height:9px;border-radius:99px;background:var(--gap)}
 .legend b.lg-ex{width:14px;height:12px;background:transparent}
 .ex-editor{display:flex;flex-direction:column;gap:10px;border-color:var(--accent)}
 .rg{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:15px}
@@ -316,7 +318,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°16)";
+const APP_VERSION = "10 nov. 2026 (n°17)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -389,6 +391,10 @@ function cycleCode(d, reg){
 function posteDuJour(d, reg){
   const hrs = (reg.cycle && reg.cycle.horaires) || {};
   const ex = (reg.exceptions || {})[dayStr(d)];
+  if(ex && ex.code === "I" && ex.de && ex.a){
+    const code = cycleCode(d, reg);
+    return { code, ex, hor: code && code !== "R" ? hrs[code] : "", extra: `${ex.de}-${ex.a}`, partiel: true };
+  }
   if(ex && ex.code){
     const hor = ex.code === "I" ? "00:00-00:00" : ex.code === "X" ? `${ex.de || ""}-${ex.a || ""}` : ex.code === "R" ? "" : hrs[ex.code];
     return { code: ex.code, ex, hor };
@@ -452,6 +458,13 @@ function compute(week, reg){
     const tr = Number(cyc.trajetMin) || 0;
     for(let d = Math.floor(g0 / CPD) - 1; d <= Math.floor((g1 - 1) / CPD); d++){
       const pj = posteDuJour(d, reg), code = pj.code, hor = pj.hor;
+      if(pj.extra && RX_PLAGE.test(pj.extra)){
+        let [xs, xe] = pj.extra.split("-").map(hm); if(xe <= xs) xe += 1440;
+        for(let h = Math.floor((d * 1440 + xs) / U); h < Math.ceil((d * 1440 + xe) / U); h++){
+          const c = cells.get(h);
+          if(c) c.busyPerso = { kind: "perso", code: "I", label: pj.ex.note || "Indisponible" };
+        }
+      }
       if(!hor || !RX_PLAGE.test(hor)) continue;
       let [s, e] = hor.split("-").map(hm);
       if(e <= s) e += 1440;
@@ -459,9 +472,10 @@ function compute(week, reg){
       const sm = d * 1440 + s - tr, em = d * 1440 + e + tr;
       for(let h = Math.floor(sm / U); h < Math.ceil(em / U); h++){
         const c = cells.get(h);
-        if(c) c.busy = { kind: code === "I" ? "perso" : "poste", code, label: pj.ex ? (pj.ex.note || POSTE[code] || "Travail") : (POSTE[code] || code) };
+        if(c) c.busy = { kind: code === "I" ? "perso" : "poste", code, label: pj.ex && !pj.partiel ? (pj.ex.note || POSTE[code] || "Travail") : (POSTE[code] || code) };
       }
     }
+    for(const c of cells.values()) if(c.busyPerso){ if(!c.busy) c.busy = c.busyPerso; delete c.busyPerso; }
   }
   for(const a of (week.ajustements || [])){
     for(let h = hFloor(a.debut); h < hCeil(a.fin); h++){
@@ -1068,8 +1082,8 @@ function travailView(reg){
   for(let i = 0; i < lead; i++) cells += `<span class="cal-x"></span>`;
   for(let n = 1; n <= nb; n++){
     const d = first + n - 1, pj = posteDuJour(d, reg), code = pj.code || "", lab = code === "X" ? "H" : (code || "·");
-    const cls = ["cal-d", "c-" + (code || "0"), pj.ex ? "ex" : "", gd.has(d) ? "gd" : "", d === today ? "today" : "", S.ui.exDay === dayStr(d) ? "sel" : ""].filter(Boolean).join(" ");
-    cells += `<button type="button" class="${cls}" data-act="cal-day" data-v="${dayStr(d)}" aria-label="${esc(fmtDay(d * CPD, true))} : ${esc(POSTE[code] || "rien")}${pj.ex ? " (changement exceptionnel)" : ""}${gd.has(d) ? ", de garde" : ""}"><span class="cal-n">${n}</span><b>${esc(lab)}</b></button>`;
+    const cls = ["cal-d", "c-" + (code || "0"), pj.ex ? "ex" : "", pj.partiel ? "ip" : "", gd.has(d) ? "gd" : "", d === today ? "today" : "", S.ui.exDay === dayStr(d) ? "sel" : ""].filter(Boolean).join(" ");
+    cells += `<button type="button" class="${cls}" data-act="cal-day" data-v="${dayStr(d)}" aria-label="${esc(fmtDay(d * CPD, true))} : ${esc(POSTE[code] || "rien")}${pj.partiel ? `, indisponible de ${fmtHM(pj.ex.de)} à ${fmtHM(pj.ex.a)}` : pj.ex ? " (changement exceptionnel)" : ""}${gd.has(d) ? ", de garde" : ""}"><span class="cal-n">${n}</span><b>${esc(lab)}</b></button>`;
   }
   let editor = "";
   if(S.ui.exDay){
@@ -1077,14 +1091,18 @@ function travailView(reg){
     const choix = S.ui.exChoix || (ex ? ex.code : "cycle");
     const opts = [["cycle", `Mon cycle (${POSTE[base] || "rien"})`], ["I", "Indisponible"], ["R", "Repos / congé"], ["M", "Matin"], ["A", "Après-midi"], ["N", "Nuit"], ["J", "Journée"], ["X", "Autres horaires"]];
     const hrs = (reg.cycle && reg.cycle.horaires) || {};
-    const de = S.ui.exDe || (ex && ex.de) || "08:00", a = S.ui.exA || (ex && ex.a) || "17:00";
+    const iMode = S.ui.exIMode || (ex && ex.code === "I" && ex.de ? "heures" : "jour");
+    const defDe = choix === "I" ? "18:00" : "08:00", defA = choix === "I" ? "07:00" : "17:00";
+    const de = S.ui.exDe || (ex && ex.code === choix && ex.de) || defDe, a = S.ui.exA || (ex && ex.code === choix && ex.a) || defA;
     const hor = choix === "X" ? `${de}-${a}` : choix === "cycle" ? (base && base !== "R" ? hrs[base] : "") : choix === "R" ? "" : hrs[choix];
-    const effet = choix === "I" ? "Pas dispo pour la garde de toute la journée." : hor && RX_PLAGE.test(hor) ? (() => { const [x, y] = hor.split("-"); return `Pas dispo pour la garde de ${fmtHM(x)} à ${fmtHM(y)}${hm(y) <= hm(x) ? " le lendemain" : ""}.`; })() : "Dispo pour la garde toute la journée.";
+    const lend = hm(a) <= hm(de) ? " le lendemain" : "";
+    const effet = choix === "I" ? (iMode === "heures" ? `Pas dispo pour la garde de ${fmtHM(de)} à ${fmtHM(a)}${lend}${base && base !== "R" ? `, en plus de ton travail (${POSTE[base].toLowerCase()})` : ""}.` : "Pas dispo pour la garde de toute la journée.") : hor && RX_PLAGE.test(hor) ? (() => { const [x, y] = hor.split("-"); return `Pas dispo pour la garde de ${fmtHM(x)} à ${fmtHM(y)}${hm(y) <= hm(x) ? " le lendemain" : ""}.`; })() : "Dispo pour la garde toute la journée.";
     editor = `<div class="panel ex-editor" id="ex-editor">
       <div class="line1"><b>${esc(cap(fmtDay(d * CPD, true)))}</b>${gd.has(d) ? `<span class="pill p-peut">Jour de garde</span>` : ""}</div>
       <div class="chips" role="radiogroup" aria-label="Poste ce jour-là">${opts.map(([v, l]) => `<button type="button" class="chip${choix === v ? " on" : ""}" role="radio" aria-checked="${choix === v}" data-act="ex-choix" data-v="${v}">${esc(l)}</button>`).join("")}</div>
-      ${choix === "X" ? `<div class="hr-row"><span class="hr-l">Horaires</span><select id="ex-de" aria-label="De">${hourSelOpts(de)}</select><span class="gm-l">→</span><select id="ex-a" aria-label="À">${hourSelOpts(a)}</select></div>` : ""}
-      ${choix !== "cycle" ? `<label for="ex-note">Pourquoi (facultatif)<input type="text" id="ex-note" autocomplete="off" placeholder="Arrêt maladie, formation, remplacement au boulot…" value="${esc(S.ui.exNote != null ? S.ui.exNote : (ex && ex.note) || "")}"></label>` : ""}
+      ${choix === "I" ? `<div class="chips" role="radiogroup" aria-label="Quand"><button type="button" class="chip${iMode === "jour" ? " on" : ""}" role="radio" aria-checked="${iMode === "jour"}" data-act="ex-imode" data-v="jour">Toute la journée</button><button type="button" class="chip${iMode === "heures" ? " on" : ""}" role="radio" aria-checked="${iMode === "heures"}" data-act="ex-imode" data-v="heures">Certaines heures</button></div>` : ""}
+      ${choix === "X" || (choix === "I" && iMode === "heures") ? `<div class="hr-row"><span class="hr-l">${choix === "I" ? "Pas dispo" : "Horaires"}</span><select id="ex-de" aria-label="De">${hourSelOpts(de)}</select><span class="gm-l">→</span><select id="ex-a" aria-label="À">${hourSelOpts(a)}</select>${hm(a) <= hm(de) ? `<span class="hr-n">le lendemain</span>` : ""}</div>` : ""}
+      ${choix !== "cycle" ? `<label for="ex-note">Pourquoi (facultatif)<input type="text" id="ex-note" autocomplete="off" placeholder="Arrêt maladie, invité, formation, remplacement au boulot…" value="${esc(S.ui.exNote != null ? S.ui.exNote : (ex && ex.note) || "")}"></label>` : ""}
       <label class="chk" for="ex-multi"><input type="checkbox" id="ex-multi"${S.ui.exMulti ? " checked" : ""}> Sur plusieurs jours</label>
       ${S.ui.exMulti ? `<label for="ex-fin">Jusqu'au (inclus)<input type="date" id="ex-fin" min="${esc(S.ui.exDay)}" value="${esc(S.ui.exFin || S.ui.exDay)}"></label>` : ""}
       <p class="item-sub" style="margin:0">${esc(effet)} Tes trous de garde et tes dispos se recalculent tout seuls.</p>
@@ -1098,10 +1116,10 @@ function travailView(reg){
     if(same2) g.keys.push(k); else groups.push({ keys: [k], ex });
   }
   const list = groups.map(({ keys, ex }) => {
-    const h = ex.code === "X" ? ` ${fmtHM(ex.de)} → ${fmtHM(ex.a)}` : "";
+    const h = (ex.code === "X" || (ex.code === "I" && ex.de)) ? ` ${fmtHM(ex.de)} → ${fmtHM(ex.a)}${hm(ex.a) <= hm(ex.de) ? " (lendemain)" : ""}` : "";
     const d0 = dayNum(keys[0]), d1 = dayNum(keys[keys.length - 1]);
     const quand2 = keys.length > 1 ? `Du ${fmtDay(d0 * CPD, true)} au ${fmtDay(d1 * CPD, true)} (${keys.length} jours)` : cap(fmtDay(d0 * CPD, true));
-    const avant = keys.length === 1 ? ` <span class="muted">(au lieu de : ${esc(POSTE[cycleCode(d0, reg)] || "rien")})</span>` : "";
+    const avant = keys.length === 1 ? ` <span class="muted">(${ex.code === "I" && ex.de ? "en plus de" : "au lieu de"} : ${esc(POSTE[cycleCode(d0, reg)] || "rien")})</span>` : "";
     return `<div class="item"><div class="item-main"><span class="who">${esc(quand2)}</span><span class="item-sub"><span class="pill ${ex.code === "I" ? "p-trou" : "p-non"}">${esc(POSTE[ex.code] || ex.code)}</span>${esc(h)}${ex.note ? " · " + esc(ex.note) : ""}${avant}</span></div><button type="button" class="chip x" data-act="ex-rm" data-v="${keys.join(",")}" aria-label="Revenir au cycle normal">×</button></div>`;
   }).join("");
   return `<section class="sec"><h2>Mon travail</h2>
@@ -1109,7 +1127,7 @@ function travailView(reg){
     <div class="panel cal">
       <div class="cal-head"><button type="button" class="btn small ghost" data-act="cal-prev" aria-label="Mois précédent">‹</button><b>${cap(MOIS_LONG[M - 1])} ${Y}</b><button type="button" class="btn small ghost" data-act="cal-next" aria-label="Mois suivant">›</button></div>
       <div class="cal-grid">${["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map(j => `<span class="cal-w">${j}</span>`).join("")}${cells}</div>
-      <div class="legend"><span>M matin · A après-midi · N nuit · J journée · H horaires perso · R repos · I indisponible</span><span><b class="lg-ex"></b>Changement exceptionnel</span><span><b class="lg-gd"></b>Jour de garde</span></div>
+      <div class="legend"><span>M matin · A après-midi · N nuit · J journée · H horaires perso · R repos · I indisponible</span><span><b class="lg-ex"></b>Changement exceptionnel</span><span><b class="lg-ip"></b>Indispo sur certaines heures</span><span><b class="lg-gd"></b>Jour de garde</span></div>
     </div>
     ${editor}
     <h3>Changements à venir</h3>
@@ -2084,11 +2102,12 @@ $("#app").addEventListener("click", e => {
       S.ui.calMonth = `${Y}-${String(M).padStart(2, "0")}`; render(); break;
     }
     case "cal-day": {
-      S.ui.exDay = b.dataset.v; S.ui.exChoix = null; S.ui.exNote = null; S.ui.exDe = null; S.ui.exA = null; S.ui.exMulti = false; S.ui.exFin = null; render();
+      S.ui.exDay = b.dataset.v; S.ui.exChoix = null; S.ui.exNote = null; S.ui.exDe = null; S.ui.exA = null; S.ui.exMulti = false; S.ui.exFin = null; S.ui.exIMode = null; render();
       requestAnimationFrame(() => { const el = $("#ex-editor"); if(el) el.scrollIntoView({ behavior: "auto", block: "nearest" }); });
       break;
     }
-    case "ex-choix": S.ui.exChoix = b.dataset.v; render(); break;
+    case "ex-choix": S.ui.exChoix = b.dataset.v; S.ui.exDe = null; S.ui.exA = null; render(); break;
+    case "ex-imode": S.ui.exIMode = b.dataset.v; S.ui.exDe = null; S.ui.exA = null; render(); break;
     case "ex-close": S.ui.exDay = null; render(); break;
     case "ex-save": {
       const day = S.ui.exDay; if(!day) return;
@@ -2106,6 +2125,7 @@ $("#app").addEventListener("click", e => {
       }
       const e = { code: choix, note };
       if(choix === "X"){ e.de = ($("#ex-de") || {}).value || "08:00"; e.a = ($("#ex-a") || {}).value || "17:00"; }
+      if(choix === "I" && (S.ui.exIMode || (ex0 && ex0.code === "I" && ex0.de ? "heures" : "jour")) === "heures"){ e.de = ($("#ex-de") || {}).value || "18:00"; e.a = ($("#ex-a") || {}).value || "07:00"; }
       for(let x = d; x <= dFin; x++){
         const k = dayStr(x);
         if(choix === "cycle" || (choix === cycleCode(x, reg) && !note)) delete all[k];
