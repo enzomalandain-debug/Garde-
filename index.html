@@ -352,7 +352,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°21)";
+const APP_VERSION = "10 nov. 2026 (n°22)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -605,7 +605,8 @@ function rangeRows(rs, saved, attrs){
   return rs.map((r, i) => {
     const skip = attrs.skip || [], sk = skip.includes(r.sig);
     const pmap = attrs.perso || {}, slots = pmap[r.sig] || [], hasP = slots.length > 0;
-    const ok = saved.includes(r.sig), stale = !ok && !sk && !hasP && (saved.some(k => overlapsSig(k, r)) || skip.some(k => overlapsSig(k, r)) || Object.keys(pmap).some(k => overlapsSig(k, r)));
+    const ok = saved.includes(r.sig), pn = hasP ? persoNote(attrs.persoNotes, r.sig, slots) : "";
+    const stale = pn === "stale" || (!ok && !sk && !hasP && (saved.some(k => overlapsSig(k, r)) || skip.some(k => overlapsSig(k, r)) || Object.keys(pmap).some(k => overlapsSig(k, r))));
     const open = attrs.persoKey && S.ui.persoOpen && S.ui.persoOpen.d === attrs.persoKey && S.ui.persoOpen.sig === r.sig;
     const multi = !(Math.floor(r.s / CPD) === Math.floor((r.e - 1) / CPD) && !isMidnight(r.e));
     const fer = []; for(let d = Math.floor(r.s / CPD); d <= Math.floor((r.e - 1) / CPD); d++) if(ferie(d)) fer.push(d);
@@ -615,17 +616,25 @@ function rangeRows(rs, saved, attrs){
           <div class="hours"><label for="pp-s">De<select id="pp-s">${hourOptions(r.s, r.e - 1, S.ui.ppS != null ? S.ui.ppS : r.s)}</select></label><label for="pp-e">À<select id="pp-e">${hourOptions(r.s + 1, r.e, S.ui.ppE != null ? S.ui.ppE : r.e)}</select></label></div>
           <div class="actions"><button type="button" class="btn small primary" data-act="perso-add" data-d="${attrs.persoKey}" data-sig="${esc(r.sig)}">Ajouter ce créneau</button><button type="button" class="btn small ghost" data-act="perso-close">Fermer</button></div>
         </div>` : `<div><button type="button" class="btn small ghost perso-btn" data-act="perso-open" data-d="${attrs.persoKey}" data-sig="${esc(r.sig)}">${hasP ? "Ajouter des horaires" : "Horaires perso"}</button></div>`}` : "";
-    return `<div class="item cons${ok || hasP ? " done" : ""}${sk ? " skip" : ""}${hasP ? " has-perso" : ""}">
+    return `<div class="item cons${ok || pn === "ok" ? " done" : ""}${sk ? " skip" : ""}${hasP ? " has-perso" : ""}">
       <div class="item-main">
         <div class="rg tnum"><span class="rg-a">${esc(fmtDay(r.s))} <b>${consH(r.s)}</b></span><span class="rg-arrow">→</span><span class="rg-b">${multi ? esc(fmtDay(r.e)) + " " : ""}<b>${consH(r.e)}</b></span></div>
-        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}${sk ? `<span class="pill p-non">Pas mis volontairement</span>` : ""}${hasP ? `<span class="pill p-peut">Horaires perso</span>` : ""}</div>${pBlock}
+        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}${sk ? `<span class="pill p-non">Pas mis volontairement</span>` : ""}${hasP ? `<span class="pill p-peut">Horaires perso</span>` : ""}${pn === "ok" ? `<span class="pill p-oui">Noté dans NexSIS</span>` : ""}</div>${pBlock}
       </div>
       <div class="cons-ck">
-        <label class="chk saisi" for="${attrs.idp}-${i}"><input type="checkbox" id="${attrs.idp}-${i}" ${attrs.data(r)}${ok ? " checked" : ""}> Saisi</label>
+        ${hasP && attrs.persoKey
+          ? `<label class="chk saisi" for="${attrs.idp}-${i}"><input type="checkbox" id="${attrs.idp}-${i}" data-perso-saisi="${attrs.persoKey}" data-sig="${esc(r.sig)}"${pn === "ok" ? " checked" : ""} aria-label="Mes horaires perso sont notés dans NexSIS"> Saisi</label>`
+          : `<label class="chk saisi" for="${attrs.idp}-${i}"><input type="checkbox" id="${attrs.idp}-${i}" ${attrs.data(r)}${ok ? " checked" : ""}> Saisi</label>`}
         ${attrs.skipData ? `<label class="chk saisi pasmis" for="${attrs.idp}-p${i}"><input type="checkbox" id="${attrs.idp}-p${i}" ${attrs.skipData(r)}${sk ? " checked" : ""} aria-label="Je ne me mets pas volontairement sur cette plage"> Pas mis</label>` : ""}
       </div>
     </div>`;
   }).join("");
+}
+// Horaires perso notés dans NexSIS : on garde une empreinte des créneaux au moment où tu coches
+function persoEmpreinte(slots){ return (slots || []).map(x => x.s + "-" + x.e).join(","); }
+function persoNote(notes, sig, slots){
+  const k = (notes || {})[sig]; if(!k || !(slots || []).length) return "";
+  return k === persoEmpreinte(slots) ? "ok" : "stale";
 }
 function saveRangeSaisie(list, sig, checked){
   const r = rangeBounds(sig);
@@ -1094,11 +1103,12 @@ function autresView(reg){
   const sa = reg.saisiesAutres || {};
   const cards = list.map((o, i) => {
     const rs = dispoRanges(o.m), done = (sa[o.d] || []), skip = ((reg.nonMisAutres || {})[o.d] || []);
-    const pmap = ((reg.persoAutres || {})[o.d]) || {};
-    const nDone = rs.filter(r => done.includes(r.sig) || (pmap[r.sig] || []).length).length, nSkip = rs.filter(r => skip.includes(r.sig)).length;
-    const misH = rs.reduce((t, r) => t + (done.includes(r.sig) ? r.e - r.s : (pmap[r.sig] || []).reduce((u, x) => u + x.e - x.s, 0)), 0) / CPH;
+    const pmap = ((reg.persoAutres || {})[o.d]) || {}, pnotes = ((reg.persoNotesAutres || {})[o.d]) || {};
+    const pOk = r => persoNote(pnotes, r.sig, pmap[r.sig]) === "ok";
+    const nDone = rs.filter(r => done.includes(r.sig) || pOk(r)).length, nSkip = rs.filter(r => skip.includes(r.sig)).length;
+    const misH = rs.reduce((t, r) => t + (done.includes(r.sig) ? r.e - r.s : pOk(r) ? (pmap[r.sig] || []).reduce((u, x) => u + x.e - x.s, 0) : 0), 0) / CPH;
     const open = (S.ui.acc || {})["autre-" + o.d] ?? (i === 0);
-    const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"`, skip, skipData: r => `data-pasmis-autre="${o.d}" data-sig="${esc(r.sig)}"`, perso: pmap, persoKey: o.d });
+    const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"`, skip, skipData: r => `data-pasmis-autre="${o.d}" data-sig="${esc(r.sig)}"`, perso: pmap, persoKey: o.d, persoNotes: pnotes });
     const pct = o.totalH ? Math.round(o.dispoH / o.totalH * 100) : 0;
     return `<details class="acc autre" id="autre-${o.d}" data-acc="autre-${o.d}"${open ? " open" : ""}>
       <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${rs.length} saisies${nSkip ? ` · ${nSkip} pas mise${nSkip > 1 ? "s" : ""}` : ""}${misH ? ` · ${fmtNum(misH)} h mises` : ""}</small></span></summary>
@@ -1592,16 +1602,19 @@ function gardeModeChips(reg){
 }
 function astreintesOf(reg, d){ return (((reg.astreintes || {})[d]) || []).slice().sort((a, b) => parseLocal(a.debut) - parseLocal(b.debut)); }
 function etatAutre(o, reg){
-  const done = ((reg.saisiesAutres || {})[o.d]) || [], skip = ((reg.nonMisAutres || {})[o.d]) || [], pm = ((reg.persoAutres || {})[o.d]) || {};
-  const mis = new Set(), pas = new Set(), misR = [];
+  const done = ((reg.saisiesAutres || {})[o.d]) || [], skip = ((reg.nonMisAutres || {})[o.d]) || [], pm = ((reg.persoAutres || {})[o.d]) || {}, pn = ((reg.persoNotesAutres || {})[o.d]) || {};
+  const mis = new Set(), pas = new Set(), misR = [], aSaisir = new Set();
   for(const r of dispoRanges(o.m)){
     if(done.includes(r.sig)){ for(let h = r.s; h < r.e; h++) mis.add(h); misR.push({ s: r.s, e: r.e }); }
-    else if((pm[r.sig] || []).length){ for(const x of pm[r.sig]){ for(let h = x.s; h < x.e; h++) mis.add(h); misR.push({ s: x.s, e: x.e }); } }
+    else if((pm[r.sig] || []).length){
+      const noted = persoNote(pn, r.sig, pm[r.sig]) === "ok";
+      for(const x of pm[r.sig]){ for(let h = x.s; h < x.e; h++) (noted ? mis : aSaisir).add(h); if(noted) misR.push({ s: x.s, e: x.e }); }
+    }
     else if(skip.includes(r.sig)) for(let h = r.s; h < r.e; h++) pas.add(h);
   }
   const ast = new Map();
   for(const a of astreintesOf(reg, o.d)){ const sl = slotOf(a); for(let h = sl.s; h < sl.e; h++) ast.set(h, a); }
-  return { mis, pas, misR, ast };
+  return { mis, pas, misR, ast, aSaisir };
 }
 function autresGardeView(reg){
   const list = autresGardesDispo(reg, 6);
@@ -1630,6 +1643,7 @@ function autresGardeView(reg){
       else if(st.ast.has(h)){ k = "ast"; lbl = "Astreinte"; }
       else if(c.busy){ k = "busy"; lbl = c.busy.label; }
       else if(st.mis.has(h)){ k = "mis"; lbl = "Mis dispo"; }
+      else if(st.aSaisir.has(h)){ k = "libre"; lbl = "À saisir"; }
       else if(st.pas.has(h)){ k = "pas"; lbl = "Pas mis"; }
       else { k = "libre"; lbl = "Libre"; }
       const last = segs[segs.length - 1];
@@ -2437,8 +2451,10 @@ $("#app").addEventListener("click", e => {
     case "perso-rm": {
       const d = b.dataset.d, sig = b.dataset.sig, i = Number(b.dataset.i);
       const all = clone(reg.persoAutres || {}); if(!all[d] || !all[d][sig]) return;
-      all[d][sig].splice(i, 1); if(!all[d][sig].length) delete all[d][sig];
-      saveReg({ persoAutres: all }); render(); toast("Créneau retiré"); break;
+      all[d][sig].splice(i, 1);
+      const pn = clone(reg.persoNotesAutres || {});
+      if(!all[d][sig].length){ delete all[d][sig]; if(pn[d]) delete pn[d][sig]; }
+      saveReg({ persoAutres: all, persoNotesAutres: pn }); render(); toast("Créneau retiré"); break;
     }
     case "copy-autre": {
       const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.v); if(!o) return;
@@ -2540,14 +2556,24 @@ $("#app").addEventListener("change", e => {
     if(box && info && r0) info.textContent = partInfo(r0.nom, { s: Number(box.dataset.rs), e: Number(box.dataset.re) }, Number($("#pt-s").value), Number($("#pt-e").value));
     return;
   }
+  if(t.dataset.persoSaisi !== undefined){
+    const d = t.dataset.persoSaisi, sig = t.dataset.sig, reg = currentReg();
+    const slots = (((reg.persoAutres || {})[d]) || {})[sig] || [];
+    const all = clone(reg.persoNotesAutres || {}), today = dayNum(nowLocal());
+    for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
+    all[d] = all[d] || {};
+    if(t.checked && slots.length) all[d][sig] = persoEmpreinte(slots); else delete all[d][sig];
+    saveReg({ persoNotesAutres: all }); render(); if(t.checked) toast("Noté dans NexSIS"); return;
+  }
   if(t.dataset.pasmisAutre !== undefined){
     const d = t.dataset.pasmisAutre, sig = t.dataset.sig;
     const nm = clone(currentReg().nonMisAutres || {}), sa = clone(currentReg().saisiesAutres || {}), today = dayNum(nowLocal());
     for(const k of Object.keys(nm)) if(dayNum(k) < today - 14) delete nm[k];
     nm[d] = saveRangeSaisie(nm[d], sig, t.checked);
     const pa = clone(currentReg().persoAutres || {});
-    if(t.checked){ sa[d] = (sa[d] || []).filter(k => k !== sig); if(pa[d]) delete pa[d][sig]; }
-    saveReg({ nonMisAutres: nm, saisiesAutres: sa, persoAutres: pa }); render(); return;
+    const pn = clone(currentReg().persoNotesAutres || {});
+    if(t.checked){ sa[d] = (sa[d] || []).filter(k => k !== sig); if(pa[d]) delete pa[d][sig]; if(pn[d]) delete pn[d][sig]; }
+    saveReg({ nonMisAutres: nm, saisiesAutres: sa, persoAutres: pa, persoNotesAutres: pn }); render(); return;
   }
   if(t.dataset.saisiAutre !== undefined){
     const d = t.dataset.saisiAutre, sig = t.dataset.sig, day = sig.split("|")[0];
@@ -2555,7 +2581,7 @@ $("#app").addEventListener("change", e => {
     const today = dayNum(nowLocal());
     for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
     all[d] = saveRangeSaisie(all[d], sig, t.checked);
-    if(t.checked){ const nm = clone(currentReg().nonMisAutres || {}); nm[d] = (nm[d] || []).filter(k => k !== sig); const pa = clone(currentReg().persoAutres || {}); if(pa[d]) delete pa[d][sig]; saveReg({ nonMisAutres: nm, persoAutres: pa }); }
+    if(t.checked){ const nm = clone(currentReg().nonMisAutres || {}); nm[d] = (nm[d] || []).filter(k => k !== sig); const pa = clone(currentReg().persoAutres || {}); if(pa[d]) delete pa[d][sig]; const pn = clone(currentReg().persoNotesAutres || {}); if(pn[d]) delete pn[d][sig]; saveReg({ nonMisAutres: nm, persoAutres: pa, persoNotesAutres: pn }); }
     saveReg({ saisiesAutres: all }); render(); return;
   }
   if(t.dataset.saisi !== undefined && week){
