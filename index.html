@@ -270,6 +270,9 @@ details.autre > .panel{margin-top:10px;border:0;padding:0}
 .legend b.lg-gd{height:4px;width:14px;border-radius:2px;background:var(--gap)}
 .legend b.lg-ex{width:14px;height:12px;background:transparent}
 .ex-editor{display:flex;flex-direction:column;gap:10px;border-color:var(--accent)}
+.rg{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:15px}
+.rg b{font-weight:700}
+.rg-arrow{color:var(--muted)}
 .view-title{font:700 24px/1.1 var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0}
 .view-reglages #reg-det > summary{display:none}
 .view-reglages #reg-det > .set:first-of-type{margin-top:0}
@@ -313,7 +316,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°15)";
+const APP_VERSION = "10 nov. 2026 (n°16)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -533,8 +536,37 @@ function consoleDays(m){
   }
   return [...out.entries()].sort((a, b) => a[0] - b[0]).map(([d, ranges]) => ({ d, ranges, sig: dayStr(d) + "|" + ranges.map(r => r.s + "-" + r.e).join(",") }));
 }
+function dispoRanges(m){ return m.dispos.map(r => ({ s: r.s, e: r.e, sig: "R|" + r.s + "-" + r.e })); }
+function rangeBounds(sig){ const [a, b] = String(sig).slice(2).split("-").map(Number); return { s: a, e: b }; }
+function overlapsSig(sig, r){ if(!String(sig).startsWith("R|")) return false; const x = rangeBounds(sig); return x.s < r.e && x.e > r.s; }
+function rangeTxt(r){
+  const sameDay = Math.floor(r.s / CPD) === Math.floor((r.e - 1) / CPD) && !isMidnight(r.e);
+  if(sameDay) return `${fmtDay(r.s)} ${consH(r.s)} → ${consH(r.e)}`;
+  return `${fmtDay(r.s)} ${consH(r.s)} → ${fmtDay(r.e)} ${consH(r.e)}`;
+}
 function consoleText(week, m){
-  return `Dispos garde ${weekRange(week)}\n` + consoleDays(m).map(x => `${fmtDay(x.d * CPD)} : ${x.ranges.length ? x.ranges.map(r => `${consH(r.s)}-${consH(r.e)}`).join(", ") : "aucune"}`).join("\n");
+  const rs = dispoRanges(m);
+  return `Dispos garde ${weekRange(week)}\n` + (rs.length ? rs.map(r => "• " + rangeTxt(r)).join("\n") : "Aucune dispo.");
+}
+function rangeRows(rs, saved, attrs){
+  return rs.map((r, i) => {
+    const ok = saved.includes(r.sig), stale = !ok && saved.some(k => overlapsSig(k, r));
+    const multi = !(Math.floor(r.s / CPD) === Math.floor((r.e - 1) / CPD) && !isMidnight(r.e));
+    const fer = []; for(let d = Math.floor(r.s / CPD); d <= Math.floor((r.e - 1) / CPD); d++) if(ferie(d)) fer.push(d);
+    return `<div class="item cons${ok ? " done" : ""}">
+      <div class="item-main">
+        <div class="rg tnum"><span class="rg-a">${esc(fmtDay(r.s))} <b>${consH(r.s)}</b></span><span class="rg-arrow">→</span><span class="rg-b">${multi ? esc(fmtDay(r.e)) + " " : ""}<b>${consH(r.e)}</b></span></div>
+        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}</div>
+      </div>
+      <label class="chk saisi" for="${attrs.idp}-${i}"><input type="checkbox" id="${attrs.idp}-${i}" ${attrs.data(r)}${ok ? " checked" : ""}> Saisi</label>
+    </div>`;
+  }).join("");
+}
+function saveRangeSaisie(list, sig, checked){
+  const r = rangeBounds(sig);
+  const out = (list || []).filter(k => String(k).startsWith("R|") && !overlapsSig(k, r));
+  if(checked) out.push(sig);
+  return out;
 }
 function prenom(n){ return String(n || "").trim().split(/\s+/)[0] || ""; }
 function same(a, b){ return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase(); }
@@ -964,19 +996,12 @@ function rpView(week, m, reg){
 }
 
 function consoleView(week, m){
-  const days = consoleDays(m), saisies = week.saisies || [];
-  const done = days.filter(x => saisies.includes(x.sig)).length;
-  const rows = days.map(x => {
-    const ok = saisies.includes(x.sig), stale = !ok && saisies.some(k => k.startsWith(dayStr(x.d) + "|"));
-    return `<div class="item cons${ok ? " done" : ""}">
-      <div class="item-main"><div class="line1"><span class="who">${esc(fmtDay(x.d * CPD))}</span>${ferie(x.d) ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}</div>
-        <div class="chips">${x.ranges.length ? x.ranges.map(r => `<span class="range tnum">${consH(r.s)} → ${consH(r.e)}</span>`).join("") : `<span class="item-sub">Aucune dispo ce jour-là</span>`}</div></div>
-      <label class="chk saisi" for="sa-${x.d}"><input type="checkbox" id="sa-${x.d}" data-saisi="${esc(x.sig)}"${ok ? " checked" : ""}${S.readOnly ? " disabled" : ""}> Saisi</label>
-    </div>`;
-  }).join("");
-  return `<section class="sec"><h2>À saisir dans la console</h2>
-    <p class="muted" style="margin:0;font-size:14px">Tes dispos sur les plages de garde, jour par jour. Coche « Saisi » au fur et à mesure : si une dispo change ensuite, le jour te le signale.</p>
-    <div class="panel list">${rows}<div class="addrow" style="align-items:center"><button type="button" class="btn small" data-act="copy-console">Copier la liste</button><span class="sugg tnum">${done}/${days.length} jours saisis</span></div></div>
+  const rs = dispoRanges(m), saisies = week.saisies || [];
+  const done = rs.filter(r => saisies.includes(r.sig)).length;
+  const rows = rangeRows(rs, saisies, { idp: "sa", data: r => `data-saisi="${esc(r.sig)}"` });
+  return `<section class="sec"><h2>À saisir dans NexSIS</h2>
+    <p class="muted" style="margin:0;font-size:14px">Tes dispos sur les plages de garde, d'un seul tenant même quand elles passent minuit. Coche « Saisi » au fur et à mesure : si une dispo change ensuite, elle te le signale.</p>
+    <div class="panel list">${rows || `<div class="item"><span class="muted">Aucune dispo sur cette garde.</span></div>`}<div class="addrow" style="align-items:center"><button type="button" class="btn small" data-act="copy-console">Copier la liste</button><span class="sugg tnum">${done}/${rs.length} saisies</span></div></div>
   </section>`;
 }
 
@@ -1003,26 +1028,19 @@ function autresView(reg){
   if(list == null) return `<section class="sec"><h2>Dispos sur les autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde : l'appli pourra alors calculer tes dispos sur les gardes des autres équipes.</p></div></section>`;
   const sa = reg.saisiesAutres || {};
   const cards = list.map((o, i) => {
-    const days = consoleDays(o.m), done = (sa[o.d] || []);
-    const nDone = days.filter(x => done.includes(x.sig)).length;
+    const rs = dispoRanges(o.m), done = (sa[o.d] || []);
+    const nDone = rs.filter(r => done.includes(r.sig)).length;
     const open = (S.ui.acc || {})["autre-" + o.d] ?? (i === 0);
-    const rows = days.map(x => {
-      const ok = done.includes(x.sig), stale = !ok && done.some(k => k.startsWith(dayStr(x.d) + "|"));
-      return `<div class="item cons${ok ? " done" : ""}">
-        <div class="item-main"><div class="line1"><span class="who">${esc(fmtDay(x.d * CPD))}</span>${ferie(x.d) ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}</div>
-          <div class="chips">${x.ranges.length ? x.ranges.map(r => `<span class="range tnum">${consH(r.s)} → ${consH(r.e)}</span>`).join("") : `<span class="item-sub">Aucune dispo ce jour-là</span>`}</div></div>
-        <label class="chk saisi" for="sx-${o.d}-${x.d}"><input type="checkbox" id="sx-${o.d}-${x.d}" data-saisi-autre="${o.d}" data-sig="${esc(x.sig)}"${ok ? " checked" : ""}> Saisi</label>
-      </div>`;
-    }).join("");
+    const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"` });
     const pct = o.totalH ? Math.round(o.dispoH / o.totalH * 100) : 0;
     return `<details class="acc autre" data-acc="autre-${o.d}"${open ? " open" : ""}>
-      <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${days.length} saisis</small></span></summary>
+      <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${rs.length} saisies</small></span></summary>
       <div class="meter dispo-meter" role="img" aria-label="${pct} % de dispo"><span style="width:${pct}%"></span></div>
       <div class="panel list">${rows}<div class="addrow" style="align-items:center"><button type="button" class="btn small" data-act="copy-autre" data-v="${o.d}">Copier la liste</button></div></div>
     </details>`;
   }).join("");
   return `<section class="sec"><h2>Dispos sur les autres équipes</h2>
-    <p class="muted" style="margin:0;font-size:14px">Tes dispos sur les prochaines gardes des autres équipes, calculées avec ton cycle de travail, prêtes à saisir dans la console. Tes indispos perso (rendez-vous, congés…) ne sont pas comptées ici.</p>
+    <p class="muted" style="margin:0;font-size:14px">Tes dispos sur les prochaines gardes des autres équipes, calculées avec ton cycle de travail, prêtes à saisir dans NexSIS d'un seul tenant. Tes indispos perso (rendez-vous, congés…) ne sont pas comptées ici.</p>
     ${cards || `<div class="panel"><p class="muted" style="margin:0">Aucune garde à venir.</p></div>`}
   </section>`;
 }
@@ -1642,7 +1660,7 @@ function renderTabbar(show, week, m, reg){
   if(m && m.libres.length) badge.garde = m.libres.length;
   const rl = week ? aRelancer(week).length : 0; if(rl) badge.reponses = rl;
   if(week && m && parseLocal(week.fin) >= parseLocal(nowLocal())){
-    const sa = week.saisies || [], n = consoleDays(m).filter(x => x.ranges.length && !sa.includes(x.sig)).length;
+    const sa = week.saisies || [], n = dispoRanges(m).filter(r => !sa.includes(r.sig)).length;
     if(n) badge.dispos = n;
   }
   const dot = { reglages: !!backupDue(reg) };
@@ -2202,16 +2220,11 @@ $("#app").addEventListener("change", e => {
     const all = clone(currentReg().saisiesAutres || {});
     const today = dayNum(nowLocal());
     for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
-    const list = (all[d] || []).filter(k => !k.startsWith(day + "|"));
-    if(t.checked) list.push(sig);
-    all[d] = list;
+    all[d] = saveRangeSaisie(all[d], sig, t.checked);
     saveReg({ saisiesAutres: all }); render(); return;
   }
   if(t.dataset.saisi !== undefined && week){
-    const sig = t.dataset.saisi, day = sig.split("|")[0];
-    const list = (week.saisies || []).filter(k => !k.startsWith(day + "|"));
-    if(t.checked) list.push(sig);
-    saveWeek(week.id, { saisies: list });
+    saveWeek(week.id, { saisies: saveRangeSaisie(week.saisies, t.dataset.saisi, t.checked) });
     return;
   }
   if(t.dataset.rpp !== undefined && S.ui.rp){ const p = S.ui.rp.pieces[Number(t.dataset.rpp)]; if(p) p.on = t.checked; return; }
