@@ -280,6 +280,12 @@ details.autre > .panel{margin-top:10px;border:0;padding:0}
 .cal-ni{position:absolute;top:2px;right:2px;min-width:14px;height:14px;border-radius:99px;background:var(--gap);color:var(--on-gap);font:700 9px/14px var(--body);font-style:normal;text-align:center}
 .cal-d.ip:has(.cal-ni)::before{display:none}
 .ex-editor{display:flex;flex-direction:column;gap:10px;border-color:var(--accent)}
+.item.cons{flex-wrap:nowrap;align-items:center}
+.item.cons .item-main{flex:1 1 0;min-width:0}
+.cons-ck{display:flex;flex-direction:column;gap:8px;align-items:flex-start;flex:0 0 auto}
+.pasmis{color:var(--muted)}
+.cons.skip .rg{text-decoration:line-through;color:var(--muted)}
+.cons.skip .rg b{color:var(--muted)}
 .rg{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:15px}
 .rg b{font-weight:700}
 .rg-arrow{color:var(--muted)}
@@ -326,7 +332,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°18)";
+const APP_VERSION = "10 nov. 2026 (n°19)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -577,15 +583,19 @@ function consoleText(week, m){
 }
 function rangeRows(rs, saved, attrs){
   return rs.map((r, i) => {
-    const ok = saved.includes(r.sig), stale = !ok && saved.some(k => overlapsSig(k, r));
+    const skip = attrs.skip || [], sk = skip.includes(r.sig);
+    const ok = saved.includes(r.sig), stale = !ok && !sk && (saved.some(k => overlapsSig(k, r)) || skip.some(k => overlapsSig(k, r)));
     const multi = !(Math.floor(r.s / CPD) === Math.floor((r.e - 1) / CPD) && !isMidnight(r.e));
     const fer = []; for(let d = Math.floor(r.s / CPD); d <= Math.floor((r.e - 1) / CPD); d++) if(ferie(d)) fer.push(d);
-    return `<div class="item cons${ok ? " done" : ""}">
+    return `<div class="item cons${ok ? " done" : ""}${sk ? " skip" : ""}">
       <div class="item-main">
         <div class="rg tnum"><span class="rg-a">${esc(fmtDay(r.s))} <b>${consH(r.s)}</b></span><span class="rg-arrow">→</span><span class="rg-b">${multi ? esc(fmtDay(r.e)) + " " : ""}<b>${consH(r.e)}</b></span></div>
-        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}</div>
+        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}${sk ? `<span class="pill p-non">Pas mis volontairement</span>` : ""}</div>
       </div>
-      <label class="chk saisi" for="${attrs.idp}-${i}"><input type="checkbox" id="${attrs.idp}-${i}" ${attrs.data(r)}${ok ? " checked" : ""}> Saisi</label>
+      <div class="cons-ck">
+        <label class="chk saisi" for="${attrs.idp}-${i}"><input type="checkbox" id="${attrs.idp}-${i}" ${attrs.data(r)}${ok ? " checked" : ""}> Saisi</label>
+        ${attrs.skipData ? `<label class="chk saisi pasmis" for="${attrs.idp}-p${i}"><input type="checkbox" id="${attrs.idp}-p${i}" ${attrs.skipData(r)}${sk ? " checked" : ""} aria-label="Je ne me mets pas volontairement sur cette plage"> Pas mis</label>` : ""}
+      </div>
     </div>`;
   }).join("");
 }
@@ -1055,13 +1065,13 @@ function autresView(reg){
   if(list == null) return `<section class="sec"><h2>Dispos sur les autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde : l'appli pourra alors calculer tes dispos sur les gardes des autres équipes.</p></div></section>`;
   const sa = reg.saisiesAutres || {};
   const cards = list.map((o, i) => {
-    const rs = dispoRanges(o.m), done = (sa[o.d] || []);
-    const nDone = rs.filter(r => done.includes(r.sig)).length;
+    const rs = dispoRanges(o.m), done = (sa[o.d] || []), skip = ((reg.nonMisAutres || {})[o.d] || []);
+    const nDone = rs.filter(r => done.includes(r.sig)).length, nSkip = rs.filter(r => skip.includes(r.sig)).length;
     const open = (S.ui.acc || {})["autre-" + o.d] ?? (i === 0);
-    const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"` });
+    const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"`, skip, skipData: r => `data-pasmis-autre="${o.d}" data-sig="${esc(r.sig)}"` });
     const pct = o.totalH ? Math.round(o.dispoH / o.totalH * 100) : 0;
     return `<details class="acc autre" data-acc="autre-${o.d}"${open ? " open" : ""}>
-      <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${rs.length} saisies</small></span></summary>
+      <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${rs.length} saisies${nSkip ? ` · ${nSkip} pas mise${nSkip > 1 ? "s" : ""}` : ""}</small></span></summary>
       <div class="meter dispo-meter" role="img" aria-label="${pct} % de dispo"><span style="width:${pct}%"></span></div>
       <div class="panel list">${rows}<div class="addrow" style="align-items:center"><button type="button" class="btn small" data-act="copy-autre" data-v="${o.d}">Copier la liste</button></div></div>
     </details>`;
@@ -2304,12 +2314,21 @@ $("#app").addEventListener("change", e => {
     if(box && info && r0) info.textContent = partInfo(r0.nom, { s: Number(box.dataset.rs), e: Number(box.dataset.re) }, Number($("#pt-s").value), Number($("#pt-e").value));
     return;
   }
+  if(t.dataset.pasmisAutre !== undefined){
+    const d = t.dataset.pasmisAutre, sig = t.dataset.sig;
+    const nm = clone(currentReg().nonMisAutres || {}), sa = clone(currentReg().saisiesAutres || {}), today = dayNum(nowLocal());
+    for(const k of Object.keys(nm)) if(dayNum(k) < today - 14) delete nm[k];
+    nm[d] = saveRangeSaisie(nm[d], sig, t.checked);
+    if(t.checked) sa[d] = (sa[d] || []).filter(k => k !== sig);
+    saveReg({ nonMisAutres: nm, saisiesAutres: sa }); render(); return;
+  }
   if(t.dataset.saisiAutre !== undefined){
     const d = t.dataset.saisiAutre, sig = t.dataset.sig, day = sig.split("|")[0];
     const all = clone(currentReg().saisiesAutres || {});
     const today = dayNum(nowLocal());
     for(const k of Object.keys(all)) if(dayNum(k) < today - 14) delete all[k];
     all[d] = saveRangeSaisie(all[d], sig, t.checked);
+    if(t.checked){ const nm = clone(currentReg().nonMisAutres || {}); nm[d] = (nm[d] || []).filter(k => k !== sig); saveReg({ nonMisAutres: nm }); }
     saveReg({ saisiesAutres: all }); render(); return;
   }
   if(t.dataset.saisi !== undefined && week){
