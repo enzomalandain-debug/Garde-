@@ -271,6 +271,14 @@ details.autre > .panel{margin-top:10px;border:0;padding:0}
 .legend b.lg-gd{height:4px;width:14px;border-radius:2px;background:var(--gap)}
 .legend b.lg-ip{width:9px;height:9px;border-radius:99px;background:var(--gap)}
 .legend b.lg-ex{width:14px;height:12px;background:transparent}
+.ed-h{margin:6px 0 0;font:600 13px/1.2 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.ed-h:first-of-type{border-top:0;padding-top:0}
+.ind-list{display:flex;flex-direction:column;gap:6px}
+.ind-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ind-row .item-sub{flex:1 1 auto;min-width:0}
+.ind-add{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border-radius:10px;padding:12px}
+.cal-ni{position:absolute;top:2px;right:2px;min-width:14px;height:14px;border-radius:99px;background:var(--gap);color:var(--on-gap);font:700 9px/14px var(--body);font-style:normal;text-align:center}
+.cal-d.ip:has(.cal-ni)::before{display:none}
 .ex-editor{display:flex;flex-direction:column;gap:10px;border-color:var(--accent)}
 .rg{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;font-size:15px}
 .rg b{font-weight:700}
@@ -318,7 +326,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°17)";
+const APP_VERSION = "10 nov. 2026 (n°18)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -388,19 +396,23 @@ function cycleCode(d, reg){
   const i = (((d - dayNum(c.ancre)) % motif.length) + motif.length) % motif.length;
   return motif[i];
 }
+function indisposDuJour(reg, k){
+  const out = (((reg.indispos || {})[k]) || []).filter(x => x && x.de && x.a);
+  const ex = (reg.exceptions || {})[k];
+  if(ex && ex.code === "I" && ex.de && ex.a) out.push({ id: "legacy", g: "legacy-" + k, de: ex.de, a: ex.a, note: ex.note || "" });
+  return out;
+}
 function posteDuJour(d, reg){
-  const hrs = (reg.cycle && reg.cycle.horaires) || {};
-  const ex = (reg.exceptions || {})[dayStr(d)];
-  if(ex && ex.code === "I" && ex.de && ex.a){
-    const code = cycleCode(d, reg);
-    return { code, ex, hor: code && code !== "R" ? hrs[code] : "", extra: `${ex.de}-${ex.a}`, partiel: true };
-  }
+  const hrs = (reg.cycle && reg.cycle.horaires) || {}, k = dayStr(d);
+  const extras = indisposDuJour(reg, k).map(x => ({ hor: `${x.de}-${x.a}`, label: x.note || "Indisponible" }));
+  let ex = (reg.exceptions || {})[k];
+  if(ex && ex.code === "I" && ex.de && ex.a) ex = null; // ancien format : indispo horaire
   if(ex && ex.code){
     const hor = ex.code === "I" ? "00:00-00:00" : ex.code === "X" ? `${ex.de || ""}-${ex.a || ""}` : ex.code === "R" ? "" : hrs[ex.code];
-    return { code: ex.code, ex, hor };
+    return { code: ex.code, ex, hor, extras, partiel: extras.length > 0 };
   }
   const code = cycleCode(d, reg);
-  return { code, ex: null, hor: code && code !== "R" ? hrs[code] : "" };
+  return { code, ex: null, hor: code && code !== "R" ? hrs[code] : "", extras, partiel: extras.length > 0 };
 }
 function periodesOf(week){ return Array.isArray(week.periodes) && week.periodes.length ? week.periodes : [{ debut: week.debut, fin: week.fin }]; }
 function periodsFor(day, reg){
@@ -458,11 +470,12 @@ function compute(week, reg){
     const tr = Number(cyc.trajetMin) || 0;
     for(let d = Math.floor(g0 / CPD) - 1; d <= Math.floor((g1 - 1) / CPD); d++){
       const pj = posteDuJour(d, reg), code = pj.code, hor = pj.hor;
-      if(pj.extra && RX_PLAGE.test(pj.extra)){
-        let [xs, xe] = pj.extra.split("-").map(hm); if(xe <= xs) xe += 1440;
+      for(const x of (pj.extras || [])){
+        if(!RX_PLAGE.test(x.hor)) continue;
+        let [xs, xe] = x.hor.split("-").map(hm); if(xe <= xs) xe += 1440;
         for(let h = Math.floor((d * 1440 + xs) / U); h < Math.ceil((d * 1440 + xe) / U); h++){
           const c = cells.get(h);
-          if(c) c.busyPerso = { kind: "perso", code: "I", label: pj.ex.note || "Indisponible" };
+          if(c && !c.busyPerso) c.busyPerso = { kind: "perso", code: "I", label: x.label };
         }
       }
       if(!hor || !RX_PLAGE.test(hor)) continue;
@@ -472,7 +485,7 @@ function compute(week, reg){
       const sm = d * 1440 + s - tr, em = d * 1440 + e + tr;
       for(let h = Math.floor(sm / U); h < Math.ceil(em / U); h++){
         const c = cells.get(h);
-        if(c) c.busy = { kind: code === "I" ? "perso" : "poste", code, label: pj.ex && !pj.partiel ? (pj.ex.note || POSTE[code] || "Travail") : (POSTE[code] || code) };
+        if(c) c.busy = { kind: code === "I" ? "perso" : "poste", code, label: pj.ex ? (pj.ex.note || POSTE[code] || "Travail") : (POSTE[code] || code) };
       }
     }
     for(const c of cells.values()) if(c.busyPerso){ if(!c.busy) c.busy = c.busyPerso; delete c.busyPerso; }
@@ -1071,6 +1084,7 @@ function joursDeGarde(reg, d0, d1){
   for(const g of gardeDays(reg, d0 - 14, 4)) if(!S.weeks.some(w => w.id === g)) mark(periodsFor(g, reg));
   return set;
 }
+function horTxt(de, a){ return `${fmtHM(de)} → ${fmtHM(a)}${hm(a) <= hm(de) ? " (lendemain)" : ""}`; }
 function travailView(reg){
   const today = dayNum(nowLocal());
   const mk = S.ui.calMonth || nowLocal().slice(0, 7);
@@ -1082,56 +1096,79 @@ function travailView(reg){
   for(let i = 0; i < lead; i++) cells += `<span class="cal-x"></span>`;
   for(let n = 1; n <= nb; n++){
     const d = first + n - 1, pj = posteDuJour(d, reg), code = pj.code || "", lab = code === "X" ? "H" : (code || "·");
-    const cls = ["cal-d", "c-" + (code || "0"), pj.ex ? "ex" : "", pj.partiel ? "ip" : "", gd.has(d) ? "gd" : "", d === today ? "today" : "", S.ui.exDay === dayStr(d) ? "sel" : ""].filter(Boolean).join(" ");
-    cells += `<button type="button" class="${cls}" data-act="cal-day" data-v="${dayStr(d)}" aria-label="${esc(fmtDay(d * CPD, true))} : ${esc(POSTE[code] || "rien")}${pj.partiel ? `, indisponible de ${fmtHM(pj.ex.de)} à ${fmtHM(pj.ex.a)}` : pj.ex ? " (changement exceptionnel)" : ""}${gd.has(d) ? ", de garde" : ""}"><span class="cal-n">${n}</span><b>${esc(lab)}</b></button>`;
+    const nI = pj.extras.length;
+    const cls = ["cal-d", "c-" + (code || "0"), pj.ex ? "ex" : "", nI ? "ip" : "", gd.has(d) ? "gd" : "", d === today ? "today" : "", S.ui.exDay === dayStr(d) ? "sel" : ""].filter(Boolean).join(" ");
+    const lbl = `${fmtDay(d * CPD, true)} : ${POSTE[code] || "rien"}${pj.ex ? " (changement exceptionnel)" : ""}${nI ? `, ${nI} indispo${nI > 1 ? "s" : ""}` : ""}${gd.has(d) ? ", de garde" : ""}`;
+    cells += `<button type="button" class="${cls}" data-act="cal-day" data-v="${dayStr(d)}" aria-label="${esc(lbl)}"><span class="cal-n">${n}</span><b>${esc(lab)}</b>${nI > 1 ? `<i class="cal-ni">${nI}</i>` : ""}</button>`;
   }
   let editor = "";
   if(S.ui.exDay){
-    const d = dayNum(S.ui.exDay), pj = posteDuJour(d, reg), base = cycleCode(d, reg), ex = pj.ex;
+    const k = S.ui.exDay, d = dayNum(k), pj = posteDuJour(d, reg), base = cycleCode(d, reg), ex = pj.ex;
     const choix = S.ui.exChoix || (ex ? ex.code : "cycle");
-    const opts = [["cycle", `Mon cycle (${POSTE[base] || "rien"})`], ["I", "Indisponible"], ["R", "Repos / congé"], ["M", "Matin"], ["A", "Après-midi"], ["N", "Nuit"], ["J", "Journée"], ["X", "Autres horaires"]];
+    const opts = [["cycle", `Mon cycle (${POSTE[base] || "rien"})`], ["I", "Indispo toute la journée"], ["R", "Repos / congé"], ["M", "Matin"], ["A", "Après-midi"], ["N", "Nuit"], ["J", "Journée"], ["X", "Autres horaires"]];
     const hrs = (reg.cycle && reg.cycle.horaires) || {};
-    const iMode = S.ui.exIMode || (ex && ex.code === "I" && ex.de ? "heures" : "jour");
-    const defDe = choix === "I" ? "18:00" : "08:00", defA = choix === "I" ? "07:00" : "17:00";
-    const de = S.ui.exDe || (ex && ex.code === choix && ex.de) || defDe, a = S.ui.exA || (ex && ex.code === choix && ex.a) || defA;
-    const hor = choix === "X" ? `${de}-${a}` : choix === "cycle" ? (base && base !== "R" ? hrs[base] : "") : choix === "R" ? "" : hrs[choix];
-    const lend = hm(a) <= hm(de) ? " le lendemain" : "";
-    const effet = choix === "I" ? (iMode === "heures" ? `Pas dispo pour la garde de ${fmtHM(de)} à ${fmtHM(a)}${lend}${base && base !== "R" ? `, en plus de ton travail (${POSTE[base].toLowerCase()})` : ""}.` : "Pas dispo pour la garde de toute la journée.") : hor && RX_PLAGE.test(hor) ? (() => { const [x, y] = hor.split("-"); return `Pas dispo pour la garde de ${fmtHM(x)} à ${fmtHM(y)}${hm(y) <= hm(x) ? " le lendemain" : ""}.`; })() : "Dispo pour la garde toute la journée.";
+    const de = S.ui.exDe || (ex && ex.code === "X" && ex.de) || "08:00", a = S.ui.exA || (ex && ex.code === "X" && ex.a) || "17:00";
+    const hor = choix === "X" ? `${de}-${a}` : choix === "cycle" ? (base && base !== "R" ? hrs[base] : "") : (choix === "R" || choix === "I") ? "" : hrs[choix];
+    const effet = choix === "I" ? "Pas dispo pour la garde de toute la journée." : hor && RX_PLAGE.test(hor) ? (() => { const [x, y] = hor.split("-"); return `Au travail de ${fmtHM(x)} à ${fmtHM(y)}${hm(y) <= hm(x) ? " le lendemain" : ""}.`; })() : "Pas de travail ce jour-là.";
+    const ind = indisposDuJour(reg, k);
+    const ide = S.ui.inDe || "18:00", ia = S.ui.inA || "07:00";
     editor = `<div class="panel ex-editor" id="ex-editor">
       <div class="line1"><b>${esc(cap(fmtDay(d * CPD, true)))}</b>${gd.has(d) ? `<span class="pill p-peut">Jour de garde</span>` : ""}</div>
-      <div class="chips" role="radiogroup" aria-label="Poste ce jour-là">${opts.map(([v, l]) => `<button type="button" class="chip${choix === v ? " on" : ""}" role="radio" aria-checked="${choix === v}" data-act="ex-choix" data-v="${v}">${esc(l)}</button>`).join("")}</div>
-      ${choix === "I" ? `<div class="chips" role="radiogroup" aria-label="Quand"><button type="button" class="chip${iMode === "jour" ? " on" : ""}" role="radio" aria-checked="${iMode === "jour"}" data-act="ex-imode" data-v="jour">Toute la journée</button><button type="button" class="chip${iMode === "heures" ? " on" : ""}" role="radio" aria-checked="${iMode === "heures"}" data-act="ex-imode" data-v="heures">Certaines heures</button></div>` : ""}
-      ${choix === "X" || (choix === "I" && iMode === "heures") ? `<div class="hr-row"><span class="hr-l">${choix === "I" ? "Pas dispo" : "Horaires"}</span><select id="ex-de" aria-label="De">${hourSelOpts(de)}</select><span class="gm-l">→</span><select id="ex-a" aria-label="À">${hourSelOpts(a)}</select>${hm(a) <= hm(de) ? `<span class="hr-n">le lendemain</span>` : ""}</div>` : ""}
-      ${choix !== "cycle" ? `<label for="ex-note">Pourquoi (facultatif)<input type="text" id="ex-note" autocomplete="off" placeholder="Arrêt maladie, invité, formation, remplacement au boulot…" value="${esc(S.ui.exNote != null ? S.ui.exNote : (ex && ex.note) || "")}"></label>` : ""}
+      <h4 class="ed-h">Ton travail ce jour-là</h4>
+      <div class="chips" role="radiogroup" aria-label="Travail ce jour-là">${opts.map(([v, l]) => `<button type="button" class="chip${choix === v ? " on" : ""}" role="radio" aria-checked="${choix === v}" data-act="ex-choix" data-v="${v}">${esc(l)}</button>`).join("")}</div>
+      ${choix === "X" ? `<div class="hr-row"><span class="hr-l">Horaires</span><select id="ex-de" aria-label="De">${hourSelOpts(de)}</select><span class="gm-l">→</span><select id="ex-a" aria-label="À">${hourSelOpts(a)}</select>${hm(a) <= hm(de) ? `<span class="hr-n">le lendemain</span>` : ""}</div>` : ""}
+      ${choix !== "cycle" ? `<label for="ex-note">Pourquoi (facultatif)<input type="text" id="ex-note" autocomplete="off" placeholder="Arrêt maladie, formation, remplacement au boulot…" value="${esc(S.ui.exNote != null ? S.ui.exNote : (ex && ex.note) || "")}"></label>` : ""}
       <label class="chk" for="ex-multi"><input type="checkbox" id="ex-multi"${S.ui.exMulti ? " checked" : ""}> Sur plusieurs jours</label>
-      ${S.ui.exMulti ? `<label for="ex-fin">Jusqu'au (inclus)<input type="date" id="ex-fin" min="${esc(S.ui.exDay)}" value="${esc(S.ui.exFin || S.ui.exDay)}"></label>` : ""}
-      <p class="item-sub" style="margin:0">${esc(effet)} Tes trous de garde et tes dispos se recalculent tout seuls.</p>
-      <div class="actions"><button type="button" class="btn primary" data-act="ex-save">Enregistrer</button><button type="button" class="btn ghost" data-act="ex-close">Fermer</button></div>
+      ${S.ui.exMulti ? `<label for="ex-fin">Jusqu'au (inclus)<input type="date" id="ex-fin" min="${esc(k)}" value="${esc(S.ui.exFin || k)}"></label>` : ""}
+      <p class="item-sub" style="margin:0">${esc(effet)}</p>
+      <div class="actions"><button type="button" class="btn primary small" data-act="ex-save">Enregistrer le travail</button></div>
+
+      <h4 class="ed-h">Indispos sur certaines heures</h4>
+      ${ind.length ? `<div class="ind-list">${ind.map(x => `<div class="ind-row"><span class="pill p-trou">${esc(horTxt(x.de, x.a))}</span><span class="item-sub">${esc(x.note || "")}</span><button type="button" class="chip x" data-act="in-rm" data-day="${esc(k)}" data-id="${esc(x.id)}" aria-label="Supprimer cette indispo">×</button></div>`).join("")}</div>` : `<p class="item-sub" style="margin:0">Aucune pour ce jour. Tu peux en ajouter autant que tu veux.</p>`}
+      <div class="ind-add">
+        <div class="hr-row"><span class="hr-l">Pas dispo</span><select id="in-de" aria-label="De">${hourSelOpts(ide)}</select><span class="gm-l">→</span><select id="in-a" aria-label="À">${hourSelOpts(ia)}</select>${hm(ia) <= hm(ide) ? `<span class="hr-n">le lendemain</span>` : ""}</div>
+        <label for="in-note">Pourquoi (facultatif)<input type="text" id="in-note" autocomplete="off" placeholder="Invité, rendez-vous, sport…" value="${esc(S.ui.inNote || "")}"></label>
+        <label class="chk" for="in-multi"><input type="checkbox" id="in-multi"${S.ui.inMulti ? " checked" : ""}> Tous les jours jusqu'au…</label>
+        ${S.ui.inMulti ? `<label for="in-fin">Jusqu'au (inclus)<input type="date" id="in-fin" min="${esc(k)}" value="${esc(S.ui.inFin || k)}"></label>` : ""}
+        <div class="actions"><button type="button" class="btn small" data-act="in-add">Ajouter cette indispo</button></div>
+      </div>
+      <div class="actions"><button type="button" class="btn ghost" data-act="ex-close">Fermer</button></div>
     </div>`;
   }
-  const exs = Object.entries(reg.exceptions || {}).filter(([k]) => dayNum(k) >= today).sort((x, y) => dayNum(x[0]) - dayNum(y[0]));
+  // Changements à venir : travail (regroupé) + indispos horaires (regroupées)
+  const items = [];
+  const exs = Object.entries(reg.exceptions || {}).filter(([k, e]) => dayNum(k) >= today && e && e.code && !(e.code === "I" && e.de)).sort((x, y) => dayNum(x[0]) - dayNum(y[0]));
   const groups = [];
   for(const [k, ex] of exs){
     const g = groups[groups.length - 1], same2 = g && dayNum(k) === dayNum(g.keys[g.keys.length - 1]) + 1 && g.ex.code === ex.code && (g.ex.note || "") === (ex.note || "") && (g.ex.de || "") === (ex.de || "") && (g.ex.a || "") === (ex.a || "");
     if(same2) g.keys.push(k); else groups.push({ keys: [k], ex });
   }
-  const list = groups.map(({ keys, ex }) => {
-    const h = (ex.code === "X" || (ex.code === "I" && ex.de)) ? ` ${fmtHM(ex.de)} → ${fmtHM(ex.a)}${hm(ex.a) <= hm(ex.de) ? " (lendemain)" : ""}` : "";
-    const d0 = dayNum(keys[0]), d1 = dayNum(keys[keys.length - 1]);
-    const quand2 = keys.length > 1 ? `Du ${fmtDay(d0 * CPD, true)} au ${fmtDay(d1 * CPD, true)} (${keys.length} jours)` : cap(fmtDay(d0 * CPD, true));
-    const avant = keys.length === 1 ? ` <span class="muted">(${ex.code === "I" && ex.de ? "en plus de" : "au lieu de"} : ${esc(POSTE[cycleCode(d0, reg)] || "rien")})</span>` : "";
-    return `<div class="item"><div class="item-main"><span class="who">${esc(quand2)}</span><span class="item-sub"><span class="pill ${ex.code === "I" ? "p-trou" : "p-non"}">${esc(POSTE[ex.code] || ex.code)}</span>${esc(h)}${ex.note ? " · " + esc(ex.note) : ""}${avant}</span></div><button type="button" class="chip x" data-act="ex-rm" data-v="${keys.join(",")}" aria-label="Revenir au cycle normal">×</button></div>`;
-  }).join("");
+  const quandG = keys => { const d0 = dayNum(keys[0]), d1 = dayNum(keys[keys.length - 1]); return keys.length > 1 ? `Du ${fmtDay(d0 * CPD, true)} au ${fmtDay(d1 * CPD, true)} (${keys.length} jours)` : cap(fmtDay(d0 * CPD, true)); };
+  for(const { keys, ex } of groups){
+    const h = ex.code === "X" ? " " + horTxt(ex.de, ex.a) : "";
+    const avant = keys.length === 1 ? ` <span class="muted">(au lieu de : ${esc(POSTE[cycleCode(dayNum(keys[0]), reg)] || "rien")})</span>` : "";
+    items.push({ d: dayNum(keys[0]), html: `<div class="item"><div class="item-main"><span class="who">${esc(quandG(keys))}</span><span class="item-sub"><span class="pill ${ex.code === "I" ? "p-trou" : "p-non"}">${esc(ex.code === "I" ? "Indispo toute la journée" : POSTE[ex.code] || ex.code)}</span>${esc(h)}${ex.note ? " · " + esc(ex.note) : ""}${avant}</span></div><button type="button" class="chip x" data-act="ex-rm" data-v="${keys.join(",")}" aria-label="Revenir au cycle normal">×</button></div>` });
+  }
+  const byG = new Map();
+  for(const [k] of Object.entries(reg.indispos || {}).concat(Object.entries(reg.exceptions || {}).filter(([, e]) => e && e.code === "I" && e.de))) {
+    if(dayNum(k) < today) continue;
+    for(const x of indisposDuJour(reg, k)){ const gk = x.g || x.id; if(!byG.has(gk)) byG.set(gk, { x, keys: [] }); if(!byG.get(gk).keys.includes(k)) byG.get(gk).keys.push(k); }
+  }
+  for(const [gk, { x, keys }] of byG){
+    keys.sort((p, q) => dayNum(p) - dayNum(q));
+    items.push({ d: dayNum(keys[0]), html: `<div class="item"><div class="item-main"><span class="who">${esc(keys.length > 1 ? `Du ${fmtDay(dayNum(keys[0]) * CPD, true)} au ${fmtDay(dayNum(keys[keys.length - 1]) * CPD, true)} (${keys.length} jours)` : cap(fmtDay(dayNum(keys[0]) * CPD, true)))}</span><span class="item-sub"><span class="pill p-trou">Indispo ${esc(horTxt(x.de, x.a))}</span>${x.note ? " · " + esc(x.note) : ""}</span></div><button type="button" class="chip x" data-act="in-rm-g" data-v="${esc(gk)}" aria-label="Supprimer">×</button></div>` });
+  }
+  items.sort((p, q) => p.d - q.d);
   return `<section class="sec"><h2>Mon travail</h2>
-    <p class="muted" style="margin:0;font-size:14px">Ton poste de chaque jour selon ton cycle. Touche un jour pour noter un changement exceptionnel (formation, remplacement au boulot, congé…) : ton cycle enregistré ne change pas.</p>
+    <p class="muted" style="margin:0;font-size:14px">Ton poste de chaque jour selon ton cycle. Touche un jour pour noter un changement (formation, remplacement au boulot, congé, arrêt…) ou des indispos sur certaines heures : ton cycle enregistré ne change pas.</p>
     <div class="panel cal">
       <div class="cal-head"><button type="button" class="btn small ghost" data-act="cal-prev" aria-label="Mois précédent">‹</button><b>${cap(MOIS_LONG[M - 1])} ${Y}</b><button type="button" class="btn small ghost" data-act="cal-next" aria-label="Mois suivant">›</button></div>
       <div class="cal-grid">${["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map(j => `<span class="cal-w">${j}</span>`).join("")}${cells}</div>
-      <div class="legend"><span>M matin · A après-midi · N nuit · J journée · H horaires perso · R repos · I indisponible</span><span><b class="lg-ex"></b>Changement exceptionnel</span><span><b class="lg-ip"></b>Indispo sur certaines heures</span><span><b class="lg-gd"></b>Jour de garde</span></div>
+      <div class="legend"><span>M matin · A après-midi · N nuit · J journée · H horaires perso · R repos · I indispo toute la journée</span><span><b class="lg-ex"></b>Changement de travail</span><span><b class="lg-ip"></b>Indispo sur certaines heures</span><span><b class="lg-gd"></b>Jour de garde</span></div>
     </div>
     ${editor}
     <h3>Changements à venir</h3>
-    <div class="panel list">${list || `<div class="item"><span class="muted">Aucun changement exceptionnel prévu.</span></div>`}</div>
+    <div class="panel list">${items.map(x => x.html).join("") || `<div class="item"><span class="muted">Aucun changement prévu.</span></div>`}</div>
   </section>`;
 }
 function ajView(week, m){
@@ -2102,17 +2139,17 @@ $("#app").addEventListener("click", e => {
       S.ui.calMonth = `${Y}-${String(M).padStart(2, "0")}`; render(); break;
     }
     case "cal-day": {
-      S.ui.exDay = b.dataset.v; S.ui.exChoix = null; S.ui.exNote = null; S.ui.exDe = null; S.ui.exA = null; S.ui.exMulti = false; S.ui.exFin = null; S.ui.exIMode = null; render();
+      Object.assign(S.ui, { exDay: b.dataset.v, exChoix: null, exNote: null, exDe: null, exA: null, exMulti: false, exFin: null, inDe: null, inA: null, inNote: null, inMulti: false, inFin: null });
+      render();
       requestAnimationFrame(() => { const el = $("#ex-editor"); if(el) el.scrollIntoView({ behavior: "auto", block: "nearest" }); });
       break;
     }
     case "ex-choix": S.ui.exChoix = b.dataset.v; S.ui.exDe = null; S.ui.exA = null; render(); break;
-    case "ex-imode": S.ui.exIMode = b.dataset.v; S.ui.exDe = null; S.ui.exA = null; render(); break;
     case "ex-close": S.ui.exDay = null; render(); break;
     case "ex-save": {
       const day = S.ui.exDay; if(!day) return;
       const d = dayNum(day), ex0 = (reg.exceptions || {})[day];
-      const choix = S.ui.exChoix || (ex0 ? ex0.code : "cycle");
+      const choix = S.ui.exChoix || (ex0 && !(ex0.code === "I" && ex0.de) ? ex0.code : "cycle");
       const note = (($("#ex-note") || {}).value || "").trim();
       const all = clone(reg.exceptions || {});
       for(const k of Object.keys(all)) if(dayNum(k) < dayNum(nowLocal()) - 90) delete all[k];
@@ -2125,19 +2162,51 @@ $("#app").addEventListener("click", e => {
       }
       const e = { code: choix, note };
       if(choix === "X"){ e.de = ($("#ex-de") || {}).value || "08:00"; e.a = ($("#ex-a") || {}).value || "17:00"; }
-      if(choix === "I" && (S.ui.exIMode || (ex0 && ex0.code === "I" && ex0.de ? "heures" : "jour")) === "heures"){ e.de = ($("#ex-de") || {}).value || "18:00"; e.a = ($("#ex-a") || {}).value || "07:00"; }
+      const ind = clone(reg.indispos || {});
       for(let x = d; x <= dFin; x++){
-        const k = dayStr(x);
+        const k = dayStr(x), old = all[k];
+        if(old && old.code === "I" && old.de){ (ind[k] = ind[k] || []).push({ id: uid("i"), g: uid("g"), de: old.de, a: old.a, note: old.note || "" }); }
         if(choix === "cycle" || (choix === cycleCode(x, reg) && !note)) delete all[k];
         else all[k] = { ...e };
       }
-      saveReg({ exceptions: all });
-      S.ui.exDay = null; S.ui.exMulti = false; S.ui.exFin = null; render();
+      saveReg({ exceptions: all, indispos: ind });
+      S.ui.exMulti = false; S.ui.exFin = null; S.ui.exChoix = null; S.ui.exNote = null; render();
       const per = dFin > d ? `du ${fmtDay(d * CPD)} au ${fmtDay(dFin * CPD)}` : fmtDay(d * CPD);
-      toast(choix === "cycle" ? `${cap(per)} : retour au cycle normal` : `Noté : ${per}, ${POSTE[choix].toLowerCase()}`);
+      toast(choix === "cycle" ? `${cap(per)} : travail selon ton cycle` : `Noté : ${per}, ${choix === "I" ? "indispo toute la journée" : POSTE[choix].toLowerCase()}`);
       break;
     }
     case "ex-rm": { const all = clone(reg.exceptions || {}); for(const k of b.dataset.v.split(",")) delete all[k]; saveReg({ exceptions: all }); render(); toast("Retour au cycle normal"); break; }
+    case "in-add": {
+      const day = S.ui.exDay; if(!day) return;
+      const de = ($("#in-de") || {}).value, a = ($("#in-a") || {}).value, note = (($("#in-note") || {}).value || "").trim();
+      if(!de || !a || de === a){ toast("Choisis une heure de début et une heure de fin différentes"); return; }
+      const d = dayNum(day); let dFin = d;
+      if(S.ui.inMulti){
+        const f = ($("#in-fin") || {}).value || S.ui.inFin;
+        if(f && !isNaN(dayNum(f))) dFin = dayNum(f);
+        if(dFin < d){ toast("La date de fin doit être après le premier jour"); return; }
+        if(dFin - d > 92){ toast("3 mois maximum d'un coup"); return; }
+      }
+      const ind = clone(reg.indispos || {}), g = uid("g");
+      for(const k of Object.keys(ind)) if(dayNum(k) < dayNum(nowLocal()) - 90) delete ind[k];
+      for(let x = d; x <= dFin; x++){ const k = dayStr(x); (ind[k] = ind[k] || []).push({ id: uid("i"), g, de, a, note }); }
+      saveReg({ indispos: ind });
+      S.ui.inNote = null; S.ui.inMulti = false; S.ui.inFin = null; render();
+      toast(`Indispo ajoutée : ${horTxt(de, a)}${dFin > d ? `, ${dFin - d + 1} jours` : ""}`);
+      break;
+    }
+    case "in-rm": {
+      const k = b.dataset.day, id = b.dataset.id;
+      if(id === "legacy"){ const all = clone(reg.exceptions || {}); delete all[k]; saveReg({ exceptions: all }); }
+      else { const ind = clone(reg.indispos || {}); ind[k] = (ind[k] || []).filter(x => x.id !== id); if(!ind[k].length) delete ind[k]; saveReg({ indispos: ind }); }
+      render(); toast("Indispo supprimée"); break;
+    }
+    case "in-rm-g": {
+      const gk = b.dataset.v;
+      if(gk.startsWith("legacy-")){ const all = clone(reg.exceptions || {}); delete all[gk.slice(7)]; saveReg({ exceptions: all }); }
+      else { const ind = clone(reg.indispos || {}); for(const k of Object.keys(ind)){ ind[k] = ind[k].filter(x => (x.g || x.id) !== gk); if(!ind[k].length) delete ind[k]; } saveReg({ indispos: ind }); }
+      render(); toast("Indispo supprimée"); break;
+    }
     case "copy-autre": {
       const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.v); if(!o) return;
       copyText(`Équipe ${o.eq} – ` + consoleText(o.week, o.m), "Liste copiée");
@@ -2265,6 +2334,9 @@ $("#app").addEventListener("change", e => {
     c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
   }
   if(t.id === "ex-multi"){ S.ui.exMulti = t.checked; render(); return; }
+  if(t.id === "in-multi"){ S.ui.inMulti = t.checked; render(); return; }
+  if(t.id === "in-fin"){ S.ui.inFin = t.value; return; }
+  if(t.id === "in-de" || t.id === "in-a"){ S.ui[t.id === "in-de" ? "inDe" : "inA"] = t.value; render(); return; }
   if(t.id === "ex-fin"){ S.ui.exFin = t.value; return; }
   if(t.id === "ex-de" || t.id === "ex-a"){ S.ui[t.id === "ex-de" ? "exDe" : "exA"] = t.value; render(); return; }
   if(t.id === "bl-year"){ S.ui.year = Number(t.value); render(); return; }
@@ -2326,6 +2398,7 @@ $("#app").addEventListener("input", e => {
   const t = e.target;
   if(t.id === "su-nom"){ if(S.ui.su) S.ui.su.nom = t.value; return; }
   if(t.id === "ex-note"){ S.ui.exNote = t.value; return; }
+  if(t.id === "in-note"){ S.ui.inNote = t.value; return; }
   if(t.id === "rp-txt") S.ui.rpTxt = t.value;
   else if(t.id === "rp-nom") S.ui.rpNom = t.value;
 });
