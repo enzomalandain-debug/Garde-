@@ -375,7 +375,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°23)";
+const APP_VERSION = "10 nov. 2026 (n°24)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -1102,13 +1102,15 @@ function consoleView(week, m){
   </section>`;
 }
 
+const AUTRES_N = 12; // gardes des autres équipes affichées (≈ 3 mois)
 function autresGardesDispo(reg, n){
   const mine = equipeOf(reg); if(!mine) return null;
+  const parEq = Math.ceil(n / Math.max(1, Object.keys(CENTRE.equipes).length - 1)) + 2;
   const now = parseLocal(nowLocal()), today = dayNum(nowLocal()), out = [];
   for(const k of Object.keys(CENTRE.equipes)){
     if(k === mine) continue;
     const g = gardeEquipe(k);
-    for(const d of gardeDays({ garde: g }, today - 7, 4)){
+    for(const d of gardeDays({ garde: g }, today - 7, parEq)){
       const per = periodsFor(d, { garde: g }); if(!per.length) continue;
       const fin = per.reduce((x, p) => parseLocal(p.fin) > parseLocal(x) ? p.fin : x, per[0].fin);
       if(parseLocal(fin) < now) continue;
@@ -1121,7 +1123,7 @@ function autresGardesDispo(reg, n){
   return out.sort((a, b) => dayNum(a.d) - dayNum(b.d)).slice(0, n);
 }
 function autresView(reg){
-  const list = autresGardesDispo(reg, 6);
+  const list = autresGardesDispo(reg, AUTRES_N);
   if(list == null) return `<section class="sec"><h2>Dispos sur les autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde : l'appli pourra alors calculer tes dispos sur les gardes des autres équipes.</p></div></section>`;
   const sa = reg.saisiesAutres || {};
   const cards = list.map((o, i) => {
@@ -1640,7 +1642,7 @@ function etatAutre(o, reg){
   return { mis, pas, misR, ast, aSaisir };
 }
 function autresGardeView(reg){
-  const list = autresGardesDispo(reg, 6);
+  const list = autresGardesDispo(reg, AUTRES_N);
   if(list == null) return `<section class="sec"><h2>Autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde pour voir les gardes des autres équipes.</p></div></section>`;
   if(!list.length) return `<section class="sec"><h2>Autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Aucune garde à venir.</p></div></section>`;
   const o = list.find(x => x.d === S.ui.autreSel) || list[0], m = o.m, st = etatAutre(o, reg);
@@ -2536,14 +2538,14 @@ $("#app").addEventListener("click", e => {
     case "bm-rm": { const all = clone(reg.bilanManuel || {}); delete all[b.dataset.d]; saveReg({ bilanManuel: all }); render(); toast("Garde retirée du bilan"); break; }
     case "ag-seg": {
       const s0 = Number(b.dataset.s), e0 = Number(b.dataset.e);
-      const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === (S.ui.autreSel || "")) || (autresGardesDispo(reg, 6) || [])[0]; if(!o) return;
+      const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === (S.ui.autreSel || "")) || (autresGardesDispo(reg, AUTRES_N) || [])[0]; if(!o) return;
       if(b.dataset.k === "ast"){ const el = $("#ag-ast"); if(el) el.scrollIntoView({ behavior: "auto", block: "start" }); return; }
       const r = dispoRanges(o.m).find(x => x.s <= s0 && x.e >= e0);
       S.ui.agForm = { d: o.d, s: r ? r.s : s0, e: r ? r.e : e0 }; render();
       requestAnimationFrame(() => { const el = $("#ag-ast"); if(el) el.scrollIntoView({ behavior: "auto", block: "start" }); });
       break;
     }
-    case "ag-new": { const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.d); if(!o) return; S.ui.agForm = { d: o.d, s: o.m.g0, e: o.m.g0 + 12 * CPH }; render(); break; }
+    case "ag-new": { const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === b.dataset.d); if(!o) return; S.ui.agForm = { d: o.d, s: o.m.g0, e: o.m.g0 + 12 * CPH }; render(); break; }
     case "ag-cancel": S.ui.agForm = null; render(); break;
     case "ag-ok": {
       const d = b.dataset.d, s0 = Number($("#ag-s").value), e0 = Number($("#ag-e").value);
@@ -2554,7 +2556,7 @@ $("#app").addEventListener("click", e => {
     case "ag-rm": { const all = clone(reg.astreintes || {}); all[b.dataset.d] = (all[b.dataset.d] || []).filter(a => a.id !== b.dataset.id); if(!all[b.dataset.d].length) delete all[b.dataset.d]; saveReg({ astreintes: all }); render(); toast("Astreinte retirée"); break; }
     case "agrp-go": {
       const txt = (S.ui.agRpTxt || "").trim(); if(!txt){ toast("Colle d'abord le message du chef"); return; }
-      const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.d); if(!o) return;
+      const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === b.dataset.d); if(!o) return;
       const st = etatAutre(o, reg);
       const base = st.misR.length ? st.misR : dispoRanges(o.m).map(r => ({ s: r.s, e: r.e }));
       const mFake = { g0: o.m.g0, g1: o.m.g1, restants: base.slice().sort((x, y) => x.s - y.s) };
@@ -2571,7 +2573,7 @@ $("#app").addEventListener("click", e => {
     }
     case "ag-copy": { const ta = $("#ag-msg"); if(ta) copyText(ta.value, "Message copié"); break; }
     case "ag-dispos": {
-      const list = autresGardesDispo(reg, 6) || [], cur = (list.find(x => x.d === S.ui.autreSel) || list[0] || {}).d;
+      const list = autresGardesDispo(reg, AUTRES_N) || [], cur = (list.find(x => x.d === S.ui.autreSel) || list[0] || {}).d;
       const acc = { ...(S.ui.acc || {}) }; for(const x of list) acc["autre-" + x.d] = x.d === cur;
       S.ui.acc = acc; S.ui.dispoMode = "autres"; goTab("dispos", "autre-" + cur, "start"); break;
     }
@@ -2603,7 +2605,7 @@ $("#app").addEventListener("click", e => {
       saveReg({ persoAutres: all, persoNotesAutres: pn }); render(); toast("Créneau retiré"); break;
     }
     case "copy-autre": {
-      const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.v); if(!o) return;
+      const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === b.dataset.v); if(!o) return;
       const sk = ((reg.nonMisAutres || {})[o.d]) || [], pm = ((reg.persoAutres || {})[o.d]) || {};
       const lines = [];
       for(const r of dispoRanges(o.m)){ if(sk.includes(r.sig)) continue; const ps = pm[r.sig] || []; (ps.length ? ps : [r]).forEach(x => lines.push("• " + rangeTxt(x))); }
