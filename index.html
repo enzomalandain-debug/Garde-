@@ -259,6 +259,8 @@ details.autre > .panel{margin-top:10px;border:0;padding:0}
 .cal-d.c-M .cal-n,.cal-d.c-A .cal-n,.cal-d.c-J .cal-n,.cal-d.c-X .cal-n{color:var(--on-dispo)}
 .cal-d.c-N .cal-n{color:var(--on-accent)}
 .cal-d.c-R b,.cal-d.c-0 b{color:var(--muted)}
+.cal-d.c-I{background:var(--gap-soft);color:var(--gap);border-color:transparent}
+.cal-d.c-I .cal-n{color:var(--gap)}
 .cal-d.ex{outline:2.5px solid var(--wait);outline-offset:-2.5px}
 .cal-d.gd::after{content:"";position:absolute;left:22%;right:22%;bottom:3px;height:3px;border-radius:2px;background:var(--gap)}
 .cal-d.today .cal-n{font-weight:800;text-decoration:underline}
@@ -311,7 +313,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°14)";
+const APP_VERSION = "10 nov. 2026 (n°15)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -335,7 +337,7 @@ const DEFAULT_REG = {
   contacts: [],
   semaineActive: null
 };
-const POSTE = { M: "Matin", A: "Après-midi", N: "Nuit", J: "Journée", R: "Repos", X: "Horaires perso" };
+const POSTE = { M: "Matin", A: "Après-midi", N: "Nuit", J: "Journée", R: "Repos", X: "Horaires perso", I: "Indisponible" };
 const STATUTS = { attente: "En attente", oui: "Oui", peut: "Peut-être", non: "Non" };
 const JOURS = ["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
 const JOURS_L = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
@@ -385,7 +387,7 @@ function posteDuJour(d, reg){
   const hrs = (reg.cycle && reg.cycle.horaires) || {};
   const ex = (reg.exceptions || {})[dayStr(d)];
   if(ex && ex.code){
-    const hor = ex.code === "X" ? `${ex.de || ""}-${ex.a || ""}` : ex.code === "R" ? "" : hrs[ex.code];
+    const hor = ex.code === "I" ? "00:00-00:00" : ex.code === "X" ? `${ex.de || ""}-${ex.a || ""}` : ex.code === "R" ? "" : hrs[ex.code];
     return { code: ex.code, ex, hor };
   }
   const code = cycleCode(d, reg);
@@ -454,7 +456,7 @@ function compute(week, reg){
       const sm = d * 1440 + s - tr, em = d * 1440 + e + tr;
       for(let h = Math.floor(sm / U); h < Math.ceil(em / U); h++){
         const c = cells.get(h);
-        if(c) c.busy = { kind: "poste", code, label: pj.ex ? (pj.ex.note || POSTE[code] || "Travail") : (POSTE[code] || code) };
+        if(c) c.busy = { kind: code === "I" ? "perso" : "poste", code, label: pj.ex ? (pj.ex.note || POSTE[code] || "Travail") : (POSTE[code] || code) };
       }
     }
   }
@@ -1055,28 +1057,41 @@ function travailView(reg){
   if(S.ui.exDay){
     const d = dayNum(S.ui.exDay), pj = posteDuJour(d, reg), base = cycleCode(d, reg), ex = pj.ex;
     const choix = S.ui.exChoix || (ex ? ex.code : "cycle");
-    const opts = [["cycle", `Mon cycle (${POSTE[base] || "rien"})`], ["R", "Repos / congé"], ["M", "Matin"], ["A", "Après-midi"], ["N", "Nuit"], ["J", "Journée"], ["X", "Autres horaires"]];
+    const opts = [["cycle", `Mon cycle (${POSTE[base] || "rien"})`], ["I", "Indisponible"], ["R", "Repos / congé"], ["M", "Matin"], ["A", "Après-midi"], ["N", "Nuit"], ["J", "Journée"], ["X", "Autres horaires"]];
     const hrs = (reg.cycle && reg.cycle.horaires) || {};
     const de = S.ui.exDe || (ex && ex.de) || "08:00", a = S.ui.exA || (ex && ex.a) || "17:00";
     const hor = choix === "X" ? `${de}-${a}` : choix === "cycle" ? (base && base !== "R" ? hrs[base] : "") : choix === "R" ? "" : hrs[choix];
-    const effet = hor && RX_PLAGE.test(hor) ? (() => { const [x, y] = hor.split("-"); return `Pas dispo pour la garde de ${fmtHM(x)} à ${fmtHM(y)}${hm(y) <= hm(x) ? " le lendemain" : ""}.`; })() : "Dispo pour la garde toute la journée.";
+    const effet = choix === "I" ? "Pas dispo pour la garde de toute la journée." : hor && RX_PLAGE.test(hor) ? (() => { const [x, y] = hor.split("-"); return `Pas dispo pour la garde de ${fmtHM(x)} à ${fmtHM(y)}${hm(y) <= hm(x) ? " le lendemain" : ""}.`; })() : "Dispo pour la garde toute la journée.";
     editor = `<div class="panel ex-editor" id="ex-editor">
       <div class="line1"><b>${esc(cap(fmtDay(d * CPD, true)))}</b>${gd.has(d) ? `<span class="pill p-peut">Jour de garde</span>` : ""}</div>
       <div class="chips" role="radiogroup" aria-label="Poste ce jour-là">${opts.map(([v, l]) => `<button type="button" class="chip${choix === v ? " on" : ""}" role="radio" aria-checked="${choix === v}" data-act="ex-choix" data-v="${v}">${esc(l)}</button>`).join("")}</div>
       ${choix === "X" ? `<div class="hr-row"><span class="hr-l">Horaires</span><select id="ex-de" aria-label="De">${hourSelOpts(de)}</select><span class="gm-l">→</span><select id="ex-a" aria-label="À">${hourSelOpts(a)}</select></div>` : ""}
-      ${choix !== "cycle" ? `<label for="ex-note">Pourquoi (facultatif)<input type="text" id="ex-note" autocomplete="off" placeholder="Formation, remplacement au boulot, congé…" value="${esc(S.ui.exNote != null ? S.ui.exNote : (ex && ex.note) || "")}"></label>` : ""}
+      ${choix !== "cycle" ? `<label for="ex-note">Pourquoi (facultatif)<input type="text" id="ex-note" autocomplete="off" placeholder="Arrêt maladie, formation, remplacement au boulot…" value="${esc(S.ui.exNote != null ? S.ui.exNote : (ex && ex.note) || "")}"></label>` : ""}
+      <label class="chk" for="ex-multi"><input type="checkbox" id="ex-multi"${S.ui.exMulti ? " checked" : ""}> Sur plusieurs jours</label>
+      ${S.ui.exMulti ? `<label for="ex-fin">Jusqu'au (inclus)<input type="date" id="ex-fin" min="${esc(S.ui.exDay)}" value="${esc(S.ui.exFin || S.ui.exDay)}"></label>` : ""}
       <p class="item-sub" style="margin:0">${esc(effet)} Tes trous de garde et tes dispos se recalculent tout seuls.</p>
       <div class="actions"><button type="button" class="btn primary" data-act="ex-save">Enregistrer</button><button type="button" class="btn ghost" data-act="ex-close">Fermer</button></div>
     </div>`;
   }
   const exs = Object.entries(reg.exceptions || {}).filter(([k]) => dayNum(k) >= today).sort((x, y) => dayNum(x[0]) - dayNum(y[0]));
-  const list = exs.map(([k, ex]) => { const h = ex.code === "X" ? ` ${fmtHM(ex.de)} → ${fmtHM(ex.a)}` : ""; return `<div class="item"><div class="item-main"><span class="who">${esc(cap(fmtDay(dayNum(k) * CPD, true)))}</span><span class="item-sub">${esc(POSTE[ex.code] || ex.code)}${esc(h)}${ex.note ? " · " + esc(ex.note) : ""} <span class="muted">(au lieu de : ${esc(POSTE[cycleCode(dayNum(k), reg)] || "rien")})</span></span></div><button type="button" class="chip x" data-act="ex-rm" data-v="${k}" aria-label="Revenir au cycle normal">×</button></div>`; }).join("");
+  const groups = [];
+  for(const [k, ex] of exs){
+    const g = groups[groups.length - 1], same2 = g && dayNum(k) === dayNum(g.keys[g.keys.length - 1]) + 1 && g.ex.code === ex.code && (g.ex.note || "") === (ex.note || "") && (g.ex.de || "") === (ex.de || "") && (g.ex.a || "") === (ex.a || "");
+    if(same2) g.keys.push(k); else groups.push({ keys: [k], ex });
+  }
+  const list = groups.map(({ keys, ex }) => {
+    const h = ex.code === "X" ? ` ${fmtHM(ex.de)} → ${fmtHM(ex.a)}` : "";
+    const d0 = dayNum(keys[0]), d1 = dayNum(keys[keys.length - 1]);
+    const quand2 = keys.length > 1 ? `Du ${fmtDay(d0 * CPD, true)} au ${fmtDay(d1 * CPD, true)} (${keys.length} jours)` : cap(fmtDay(d0 * CPD, true));
+    const avant = keys.length === 1 ? ` <span class="muted">(au lieu de : ${esc(POSTE[cycleCode(d0, reg)] || "rien")})</span>` : "";
+    return `<div class="item"><div class="item-main"><span class="who">${esc(quand2)}</span><span class="item-sub"><span class="pill ${ex.code === "I" ? "p-trou" : "p-non"}">${esc(POSTE[ex.code] || ex.code)}</span>${esc(h)}${ex.note ? " · " + esc(ex.note) : ""}${avant}</span></div><button type="button" class="chip x" data-act="ex-rm" data-v="${keys.join(",")}" aria-label="Revenir au cycle normal">×</button></div>`;
+  }).join("");
   return `<section class="sec"><h2>Mon travail</h2>
     <p class="muted" style="margin:0;font-size:14px">Ton poste de chaque jour selon ton cycle. Touche un jour pour noter un changement exceptionnel (formation, remplacement au boulot, congé…) : ton cycle enregistré ne change pas.</p>
     <div class="panel cal">
       <div class="cal-head"><button type="button" class="btn small ghost" data-act="cal-prev" aria-label="Mois précédent">‹</button><b>${cap(MOIS_LONG[M - 1])} ${Y}</b><button type="button" class="btn small ghost" data-act="cal-next" aria-label="Mois suivant">›</button></div>
       <div class="cal-grid">${["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map(j => `<span class="cal-w">${j}</span>`).join("")}${cells}</div>
-      <div class="legend"><span>M matin · A après-midi · N nuit · J journée · H horaires perso · R repos</span><span><b class="lg-ex"></b>Changement exceptionnel</span><span><b class="lg-gd"></b>Jour de garde</span></div>
+      <div class="legend"><span>M matin · A après-midi · N nuit · J journée · H horaires perso · R repos · I indisponible</span><span><b class="lg-ex"></b>Changement exceptionnel</span><span><b class="lg-gd"></b>Jour de garde</span></div>
     </div>
     ${editor}
     <h3>Changements à venir</h3>
@@ -2051,7 +2066,7 @@ $("#app").addEventListener("click", e => {
       S.ui.calMonth = `${Y}-${String(M).padStart(2, "0")}`; render(); break;
     }
     case "cal-day": {
-      S.ui.exDay = b.dataset.v; S.ui.exChoix = null; S.ui.exNote = null; S.ui.exDe = null; S.ui.exA = null; render();
+      S.ui.exDay = b.dataset.v; S.ui.exChoix = null; S.ui.exNote = null; S.ui.exDe = null; S.ui.exA = null; S.ui.exMulti = false; S.ui.exFin = null; render();
       requestAnimationFrame(() => { const el = $("#ex-editor"); if(el) el.scrollIntoView({ behavior: "auto", block: "nearest" }); });
       break;
     }
@@ -2064,18 +2079,27 @@ $("#app").addEventListener("click", e => {
       const note = (($("#ex-note") || {}).value || "").trim();
       const all = clone(reg.exceptions || {});
       for(const k of Object.keys(all)) if(dayNum(k) < dayNum(nowLocal()) - 90) delete all[k];
-      if(choix === "cycle" || (choix === cycleCode(d, reg) && !note)) delete all[day];
-      else {
-        const e = { code: choix, note };
-        if(choix === "X"){ e.de = ($("#ex-de") || {}).value || "08:00"; e.a = ($("#ex-a") || {}).value || "17:00"; }
-        all[day] = e;
+      let dFin = d;
+      if(S.ui.exMulti){
+        const f = ($("#ex-fin") || {}).value || S.ui.exFin;
+        if(f && !isNaN(dayNum(f))) dFin = dayNum(f);
+        if(dFin < d){ toast("La date de fin doit être après le premier jour"); return; }
+        if(dFin - d > 92){ toast("3 mois maximum d'un coup"); return; }
+      }
+      const e = { code: choix, note };
+      if(choix === "X"){ e.de = ($("#ex-de") || {}).value || "08:00"; e.a = ($("#ex-a") || {}).value || "17:00"; }
+      for(let x = d; x <= dFin; x++){
+        const k = dayStr(x);
+        if(choix === "cycle" || (choix === cycleCode(x, reg) && !note)) delete all[k];
+        else all[k] = { ...e };
       }
       saveReg({ exceptions: all });
-      S.ui.exDay = null; render();
-      toast(all[day] ? `Noté : ${fmtDay(d * CPD)} en ${POSTE[all[day].code].toLowerCase()}` : `${fmtDay(d * CPD)} : retour au cycle normal`);
+      S.ui.exDay = null; S.ui.exMulti = false; S.ui.exFin = null; render();
+      const per = dFin > d ? `du ${fmtDay(d * CPD)} au ${fmtDay(dFin * CPD)}` : fmtDay(d * CPD);
+      toast(choix === "cycle" ? `${cap(per)} : retour au cycle normal` : `Noté : ${per}, ${POSTE[choix].toLowerCase()}`);
       break;
     }
-    case "ex-rm": { const all = clone(reg.exceptions || {}); delete all[b.dataset.v]; saveReg({ exceptions: all }); render(); toast("Retour au cycle normal"); break; }
+    case "ex-rm": { const all = clone(reg.exceptions || {}); for(const k of b.dataset.v.split(",")) delete all[k]; saveReg({ exceptions: all }); render(); toast("Retour au cycle normal"); break; }
     case "copy-autre": {
       const o = (autresGardesDispo(reg, 6) || []).find(x => x.d === b.dataset.v); if(!o) return;
       copyText(`Équipe ${o.eq} – ` + consoleText(o.week, o.m), "Liste copiée");
@@ -2207,6 +2231,8 @@ $("#app").addEventListener("change", e => {
     const c = clone(currentReg().cycle), L = Math.min(70, Math.max(1, Math.round(Number(t.value) || 7)));
     c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
   }
+  if(t.id === "ex-multi"){ S.ui.exMulti = t.checked; render(); return; }
+  if(t.id === "ex-fin"){ S.ui.exFin = t.value; return; }
   if(t.id === "ex-de" || t.id === "ex-a"){ S.ui[t.id === "ex-de" ? "exDe" : "exA"] = t.value; render(); return; }
   if(t.id === "bl-year"){ S.ui.year = Number(t.value); render(); return; }
   if(t.id === "g-eq"){
