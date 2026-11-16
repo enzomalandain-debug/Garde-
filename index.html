@@ -20,7 +20,7 @@
   --accent:#1D3A78; --on-accent:#FFFFFF;
   --gap:#C4282D; --on-gap:#FFFFFF; --gap-soft:#FBE4E3;
   --cover:#1D7553; --on-cover:#FFFFFF; --cover-soft:#DCF0E6;
-  --dispo:#CAD6EC; --on-dispo:#22355E;
+  --dispo:#CAD6EC; --on-dispo:#22355E; --renf:#B4690E;
   --wait:#94570A; --wait-soft:#FBEFD8;
   --display:"Roboto Condensed","sans-serif-condensed","Arial Narrow","Helvetica Neue",sans-serif;
   --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -31,7 +31,7 @@
     --accent:#9DB8F2; --on-accent:#0C1220;
     --gap:#F0646A; --on-gap:#22080A; --gap-soft:#3A1A1E;
     --cover:#4DC497; --on-cover:#06231A; --cover-soft:#15302A;
-    --dispo:#2B3C62; --on-dispo:#CFDBF5;
+    --dispo:#2B3C62; --on-dispo:#CFDBF5; --renf:#F0A848;
     --wait:#F0B357; --wait-soft:#372A14;
     color-scheme:dark;
   }
@@ -41,7 +41,7 @@
   --accent:#9DB8F2; --on-accent:#0C1220;
   --gap:#F0646A; --on-gap:#22080A; --gap-soft:#3A1A1E;
   --cover:#4DC497; --on-cover:#06231A; --cover-soft:#15302A;
-  --dispo:#2B3C62; --on-dispo:#CFDBF5;
+  --dispo:#2B3C62; --on-dispo:#CFDBF5; --renf:#F0A848;
   --wait:#F0B357; --wait-soft:#372A14;
   color-scheme:dark;
 }
@@ -59,7 +59,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* En-tête */
 .top{display:flex;flex-direction:column;gap:10px}
 .eyebrow{font:600 12px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-h1{font:700 clamp(20px,5.6vw,28px)/1.05 var(--display);text-transform:uppercase;letter-spacing:.01em}
+h1{font:700 clamp(24px,7vw,30px)/1.05 var(--display);text-transform:uppercase;letter-spacing:.01em}
 .weekbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .garde-autres .weekbar{display:none}
 .weekbar select{flex:1 1 180px;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-weight:600}
@@ -78,7 +78,7 @@ label > input,label > select{color:var(--ink);font-size:15px}
 
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
 .sec{display:flex;flex-direction:column;gap:10px}
-.sec h2{font:700 21px/1.1 var(--display);text-transform:uppercase;letter-spacing:.04em}
+.sec h2{font:700 13px/1.2 var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:4px 2px 0}
 .sec h3{font:600 15px/1.2 var(--body);color:var(--muted);margin-top:6px}
 .notice{background:var(--wait-soft);color:var(--ink);border-radius:10px;padding:12px 14px;font-size:14px}
 .notice b{color:var(--wait)}
@@ -117,6 +117,38 @@ label > input,label > select{color:var(--ink);font-size:15px}
 .bl-kpis > div{display:flex;flex-direction:column;gap:2px}
 .bl-kpis .big{font-size:44px}
 .big.bl-n{color:var(--accent)}
+.big.bl-m{color:var(--muted)}
+.big.bl-r{color:var(--renf)}
+.bl-kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bl-kpis > div{min-width:0}
+.bl-kpis .sum-lbl{font:600 13px/1.2 var(--body);letter-spacing:.04em;color:var(--muted)}
+.bl-kpis.k3 .big{font-size:30px;white-space:nowrap}
+.bl-kpis.k3 .big small{font-size:16px}
+.bl-renf{background:var(--renf)}
+.legend b.bl-renf{display:inline-block}
+.ent-meta{justify-content:space-between;align-items:center}
+.rf-tot{gap:6px}
+body.has-tabs:not(.view-garde):not(.view-demandes) .weekbar{display:none}
+details.sec-acc{display:block}
+details.sec-acc > summary{padding:10px 2px}
+details.sec-acc > .panel{margin-top:6px}
+.ast-row{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.ast-ck{align-self:flex-start;padding:7px 12px 7px 9px;border:1px solid var(--line);border-radius:99px;font-weight:600;font-size:14px;background:var(--surface)}
+.ast-ck.on{background:var(--cover);border-color:var(--cover);color:var(--on-cover)}
+.ast-ck input{accent-color:var(--cover);width:18px;height:18px;margin:0}
+.ast-info{display:flex;flex-direction:column;gap:8px}
+.ast-acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill-btn{border:0;cursor:pointer;font-size:13px;padding:6px 10px}
+.item.cons.is-ast{border-left:4px solid var(--cover);padding-left:10px}
+.lnk{background:none;border:0;padding:4px 0;color:var(--accent);font:600 15px/1.2 var(--body);cursor:pointer;text-align:left;align-self:flex-start;text-decoration:underline;text-underline-offset:3px}
+.sheet-bg{position:fixed;inset:0;background:rgba(8,12,24,.45);z-index:40}
+.sheet{position:fixed;left:12px;right:12px;top:max(14vh,calc(env(safe-area-inset-top,0px) + 16px));z-index:41;max-width:460px;margin:0 auto;background:var(--surface);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.sh-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:17px}
+.sh-sub{margin:-6px 0 0;color:var(--muted);font-size:14px}
+.sh-q{margin:4px 0 0;font:700 22px/1.2 var(--body)}
+.sh-btns{display:flex;gap:10px;flex-wrap:wrap}
+.sh-btns .btn{flex:1 1 0;padding:13px 14px;font-size:16px}
+.sheet select{width:100%}
 .view-bilan .weekbar{display:none}
 .bl-chart{display:flex;flex-direction:column;gap:16px}
 .bl-eq{display:flex;flex-direction:column;gap:6px}
@@ -246,7 +278,7 @@ button.p-relance{padding:4px 8px;border-radius:99px}
 .loading{padding:40px 0;text-align:center;color:var(--muted)}
 
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.tabbar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
 .tb{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 1px 8px;border:0;background:transparent;color:var(--muted);font:600 10.5px/1.1 var(--body);cursor:pointer;min-width:0;letter-spacing:-.01em}
 .tb svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tb.on{color:var(--accent)}
@@ -375,7 +407,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "10 nov. 2026 (n°24)";
+const APP_VERSION = "16 nov. 2026 (n°25)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -633,16 +665,18 @@ function rangeRows(rs, saved, attrs){
     const open = attrs.persoKey && S.ui.persoOpen && S.ui.persoOpen.d === attrs.persoKey && S.ui.persoOpen.sig === r.sig;
     const multi = !(Math.floor(r.s / CPD) === Math.floor((r.e - 1) / CPD) && !isMidnight(r.e));
     const fer = []; for(let d = Math.floor(r.s / CPD); d <= Math.floor((r.e - 1) / CPD); d++) if(ferie(d)) fer.push(d);
-    const pBlock = attrs.persoKey ? `
+    const astOn0 = attrs.ast && (attrs.ast.get(r.sig) || []).length > 0;
+    const pBlock = attrs.persoKey && !(astOn0 && !hasP) ? `
         ${hasP ? `<div class="perso-list"><span class="item-sub">Tu te mets :</span>${slots.map((x, j) => `<span class="pill p-oui perso-pill tnum">${esc(rangeTxt(x))}<button type="button" class="pp-x" data-act="perso-rm" data-d="${attrs.persoKey}" data-sig="${esc(r.sig)}" data-i="${j}" aria-label="Retirer ce créneau">×</button></span>`).join("")}</div>` : ""}
         ${open ? `<div class="perso-ed">
           <div class="hours"><label for="pp-s">De<select id="pp-s">${hourOptions(r.s, r.e - 1, S.ui.ppS != null ? S.ui.ppS : r.s)}</select></label><label for="pp-e">À<select id="pp-e">${hourOptions(r.s + 1, r.e, S.ui.ppE != null ? S.ui.ppE : r.e)}</select></label></div>
           <div class="actions"><button type="button" class="btn small primary" data-act="perso-add" data-d="${attrs.persoKey}" data-sig="${esc(r.sig)}">Ajouter ce créneau</button><button type="button" class="btn small ghost" data-act="perso-close">Fermer</button></div>
         </div>` : `<div><button type="button" class="btn small ghost perso-btn" data-act="perso-open" data-d="${attrs.persoKey}" data-sig="${esc(r.sig)}">${hasP ? "Ajouter des horaires" : "Horaires perso"}</button></div>`}` : "";
-    return `<div class="item cons${ok || pn === "ok" ? " done" : ""}${sk ? " skip" : ""}${hasP ? " has-perso" : ""}">
+    const astOn = attrs.ast && (attrs.ast.get(r.sig) || []).length > 0;
+    return `<div class="item cons${ok || pn === "ok" ? " done" : ""}${sk ? " skip" : ""}${hasP ? " has-perso" : ""}${astOn ? " is-ast" : ""}">
       <div class="item-main">
         <div class="rg tnum"><span class="rg-a">${esc(fmtDay(r.s))} <b>${consH(r.s)}</b></span><span class="rg-arrow">→</span><span class="rg-b">${multi ? esc(fmtDay(r.e)) + " " : ""}<b>${consH(r.e)}</b></span></div>
-        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}${sk ? `<span class="pill p-non">Pas mis volontairement</span>` : ""}${hasP ? `<span class="pill p-peut">Horaires perso</span>` : ""}${pn === "ok" ? `<span class="pill p-oui">Noté dans NexSIS</span>` : ""}</div>${pBlock}
+        <div class="line1"><span class="item-sub tnum">${fmtDur(r.e - r.s)}${r.e - r.s >= CPD ? ` d'affilée, sur ${Math.floor((r.e - 1) / CPD) - Math.floor(r.s / CPD) + 1} jours` : ""}</span>${fer.length ? `<span class="pill p-peut">Férié</span>` : ""}${stale ? `<span class="pill p-attente">Changé depuis ta saisie</span>` : ""}${sk ? `<span class="pill p-non">Pas mis volontairement</span>` : ""}${hasP ? `<span class="pill p-peut">Horaires perso</span>` : ""}${pn === "ok" ? `<span class="pill p-oui">Noté dans NexSIS</span>` : ""}</div>${attrs.ast ? astBlock(attrs, r, i) : ""}${pBlock}
       </div>
       <div class="cons-ck">
         ${hasP && attrs.persoKey
@@ -1062,44 +1096,22 @@ function boardView(m, reg){
 }
 
 function rpView(week, m, reg){
-  const u = S.ui, ro = S.readOnly;
-  if(sampleOk === false) return `<section class="sec" id="rp-sec"><h2>Réponse reçue</h2><div class="panel"><p class="muted" style="margin:0">L'analyse automatique n'est pas disponible ici. Colle la réponse dans la conversation avec Claude, ou note-la avec « Noter un remplaçant ».</p></div></section>`;
-  let body;
-  if(u.rpDone){
-    const d = u.rpDone;
-    body = `<div class="line1">${d.titre ? `<span class="pill p-attente">Désistement</span><span>${esc(d.titre)}</span>` : `<span class="pill p-${esc(d.statut)}">${esc(STATUTS[d.statut])}</span><span>Réponse de ${esc(d.nom)} enregistrée, planning mis à jour.</span>`}</div>
-      ${d.chef ? `<label for="rp-chef">Message pour le chef de garde<textarea id="rp-chef" class="big-ta">${esc(d.chef)}</textarea></label>
-      <div class="actions"><button type="button" class="btn primary" data-act="rp-copy">Copier pour le chef de garde</button>${d.titre ? `<button type="button" class="btn" data-act="rp-relance">Préparer une relance</button>` : `<button type="button" class="btn" data-act="rp-merci">Message de remerciement</button>`}</div>` : ""}
-      <div class="actions"><button type="button" class="btn ghost" data-act="rp-reset">Coller une autre réponse</button></div>`;
-  } else if(u.rp){
-    const r = u.rp;
-    body = `<label for="rp-nom2">De qui ?<input type="text" id="rp-nom2" list="people" autocomplete="off" value="${esc(r.nom)}"></label>
-      <p class="rp-quote">« ${esc(r.txt.length > 200 ? r.txt.slice(0, 197) + "…" : r.txt)} »</p>
-      ${r.resume ? `<p style="margin:0;font-weight:600">${esc(r.resume)}</p>` : ""}
-      ${r.doute ? `<div class="notice"><b>À vérifier :</b> ${esc(r.doute)}</div>` : ""}
-      <div class="chips" role="group" aria-label="Réponse">${["oui", "peut", "non"].map(k => `<button type="button" class="chip${r.statut === k ? " on" : ""}" data-act="rp-statut" data-v="${k}">${STATUTS[k]}</button>`).join("")}</div>
-      ${r.statut === "non" ? "" : (r.pieces.length ? `<div class="rp-slots">${r.pieces.map((p, i) => `<label class="chk" for="rp-p${i}"><input type="checkbox" id="rp-p${i}" data-rpp="${i}"${p.on ? " checked" : ""}> <span class="tnum">${esc(fmtSlot(p))} (${fmtDur(p.e - p.s)})</span></label>`).join("")}</div>` : `<p class="item-sub" style="margin:0">Aucun créneau à couvrir reconnu dans la réponse.</p>`)}
-      ${r.hors ? `<p class="item-sub" style="margin:0">Une partie de ce qu'il propose tombe en dehors de tes créneaux à couvrir : elle est ignorée.</p>` : ""}
-      ${r.statut === "peut" ? `<p class="item-sub" style="margin:0">« Peut-être » note ces créneaux en attente de validation sur le planning, sans les compter comme couverts.</p>` : ""}
-      <div class="actions"><button type="button" class="btn primary" data-act="rp-ok"${ro ? " disabled" : ""}>${r.statut === "oui" ? "Valider et remplir le planning" : "Enregistrer la réponse"}</button><button type="button" class="btn ghost" data-act="rp-cancel">Annuler</button></div>`;
-  } else {
-    body = `<label for="rp-nom">De qui ?<input type="text" id="rp-nom" list="people" autocomplete="off" placeholder="Prénom" value="${esc(u.rpNom || "")}"></label>
-      <label for="rp-txt">Sa réponse<textarea id="rp-txt" placeholder="Colle ici le message reçu, par exemple : « Ok pour mercredi, je peux de 11h à 17h »">${esc(u.rpTxt || "")}</textarea></label>
-      <div class="actions">${u.rpBusy ? `<span class="sugg">Analyse…</span>` : `<button type="button" class="btn primary" data-act="rp-go"${sampleOk === null || ro ? " disabled" : ""}>Analyser la réponse</button>`}</div>
-      <p class="item-sub" style="margin:0">L'analyse se fait sur ton téléphone, sans Internet. Vérifie toujours les créneaux cochés avant de valider.</p>
-      ${u.rpErr ? `<div class="hint">${esc(u.rpErr)}</div>` : ""}`;
-  }
-  return `<section class="sec" id="rp-sec"><h2>Réponse reçue</h2><div class="panel rp">${body}</div></section>`;
+  const d = S.ui.rpDone; if(!d) return "";
+  return `<section class="sec" id="rp-sec"><h2>Message pour le chef de garde</h2><div class="panel rp">
+    <div class="line1">${d.titre ? `<span class="pill p-attente">Désistement</span><span>${esc(d.titre)}</span>` : `<span class="pill p-${esc(d.statut)}">${esc(STATUTS[d.statut])}</span><span>${esc(d.nom)} : planning mis à jour.</span>`}</div>
+    ${d.chef ? `<textarea id="rp-chef" class="big-ta" aria-label="Message pour le chef de garde">${esc(d.chef)}</textarea>
+    <div class="actions"><button type="button" class="btn primary" data-act="rp-copy">Copier pour le chef de garde</button>${d.titre ? `<button type="button" class="btn" data-act="rp-relance">Préparer une relance</button>` : `<button type="button" class="btn" data-act="rp-merci">Message de remerciement</button>`}</div>` : ""}
+    <div class="actions"><button type="button" class="btn ghost" data-act="rp-reset">Fermer</button></div>
+  </div></section>`;
 }
 
 function consoleView(week, m){
   const rs = dispoRanges(m), saisies = week.saisies || [];
   const done = rs.filter(r => saisies.includes(r.sig)).length;
   const rows = rangeRows(rs, saisies, { idp: "sa", data: r => `data-saisi="${esc(r.sig)}"` });
-  return `<section class="sec"><h2>À saisir dans NexSIS</h2>
-    <p class="muted" style="margin:0;font-size:14px">Tes dispos sur les plages de garde, d'un seul tenant même quand elles passent minuit. Coche « Saisi » au fur et à mesure : si une dispo change ensuite, elle te le signale.</p>
+  return `<details class="acc sec-acc" data-acc="nexsis-moi"${accOpen("nexsis-moi")}><summary><span class="autre-t"><span>Mes dispos à saisir dans NexSIS</span><small class="tnum">${done}/${rs.length} saisies</small></span></summary>
     <div class="panel list">${rows || `<div class="item"><span class="muted">Aucune dispo sur cette garde.</span></div>`}<div class="addrow" style="align-items:center"><button type="button" class="btn small" data-act="copy-console">Copier la liste</button><span class="sugg tnum">${done}/${rs.length} saisies</span></div></div>
-  </section>`;
+  </details>`;
 }
 
 const AUTRES_N = 12; // gardes des autres équipes affichées (≈ 3 mois)
@@ -1121,35 +1133,6 @@ function autresGardesDispo(reg, n){
     }
   }
   return out.sort((a, b) => dayNum(a.d) - dayNum(b.d)).slice(0, n);
-}
-function autresView(reg){
-  const list = autresGardesDispo(reg, AUTRES_N);
-  if(list == null) return `<section class="sec"><h2>Dispos sur les autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde : l'appli pourra alors calculer tes dispos sur les gardes des autres équipes.</p></div></section>`;
-  const sa = reg.saisiesAutres || {};
-  const cards = list.map((o, i) => {
-    const rs = dispoRanges(o.m), done = (sa[o.d] || []), skip = ((reg.nonMisAutres || {})[o.d] || []);
-    const pmap = ((reg.persoAutres || {})[o.d]) || {}, pnotes = ((reg.persoNotesAutres || {})[o.d]) || {};
-    const pOk = r => persoNote(pnotes, r.sig, pmap[r.sig]) === "ok";
-    const nDone = rs.filter(r => done.includes(r.sig) || pOk(r)).length, nSkip = rs.filter(r => skip.includes(r.sig)).length;
-    const misH = rs.reduce((t, r) => t + (done.includes(r.sig) ? r.e - r.s : pOk(r) ? (pmap[r.sig] || []).reduce((u, x) => u + x.e - x.s, 0) : 0), 0) / CPH;
-    const open = (S.ui.acc || {})["autre-" + o.d] ?? (i === 0);
-    const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"`, skip, skipData: r => `data-pasmis-autre="${o.d}" data-sig="${esc(r.sig)}"`, perso: pmap, persoKey: o.d, persoNotes: pnotes });
-    const pct = o.totalH ? Math.round(o.dispoH / o.totalH * 100) : 0;
-    return `<details class="acc autre" id="autre-${o.d}" data-acc="autre-${o.d}"${open ? " open" : ""}>
-      <summary><span class="autre-t"><span><b>Équipe ${o.eq}</b> · ${esc(weekLabel(o.week).replace(/ \d{4}$/, ""))}</span><small class="tnum">${fmtNum(o.dispoH)} h dispo sur ${fmtNum(o.totalH)} h · ${nDone}/${rs.length} saisies${nSkip ? ` · ${nSkip} pas mise${nSkip > 1 ? "s" : ""}` : ""}${misH ? ` · ${fmtNum(misH)} h mises` : ""}</small></span></summary>
-      <div class="meter dispo-meter" role="img" aria-label="${pct} % de dispo"><span style="width:${pct}%"></span></div>
-      <div class="panel list">${rows}<div class="addrow" style="align-items:center"><button type="button" class="btn small" data-act="copy-autre" data-v="${o.d}">Copier la liste</button></div></div>
-    </details>`;
-  }).join("");
-  return `<section class="sec"><h2>Dispos sur les autres équipes</h2>
-    <p class="muted" style="margin:0;font-size:14px">Tes dispos sur les prochaines gardes des autres équipes, calculées avec ton cycle de travail, prêtes à saisir dans NexSIS d'un seul tenant. Tes indispos perso (rendez-vous, congés…) ne sont pas comptées ici.</p>
-    ${cards || `<div class="panel"><p class="muted" style="margin:0">Aucune garde à venir.</p></div>`}
-  </section>`;
-}
-function dispoModeChips(){
-  const m = S.ui.dispoMode || "moi";
-  const c = (v, l) => `<button type="button" class="chip${m === v ? " on" : ""}" role="radio" aria-checked="${m === v}" data-act="dispo-mode" data-v="${v}">${l}</button>`;
-  return `<div class="chips seg-mode" role="radiogroup" aria-label="Quelles dispos">${c("moi", "Ma garde")}${c("autres", "Autres équipes")}${c("travail", "Mon travail")}</div>`;
 }
 const MOIS_LONG = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 function joursDeGarde(reg, d0, d1){
@@ -1235,7 +1218,7 @@ function travailView(reg){
   }
   items.sort((p, q) => p.d - q.d);
   return `<section class="sec"><h2>Mon travail</h2>
-    <p class="muted" style="margin:0;font-size:14px">Ton poste de chaque jour selon ton cycle. Touche un jour pour noter un changement (formation, remplacement au boulot, congé, arrêt…) ou des indispos sur certaines heures : ton cycle enregistré ne change pas.</p>
+    <p class="muted" style="margin:0;font-size:14px">Touche un jour pour noter un changement de travail ou une indispo.</p>
     <div class="panel cal">
       <div class="cal-head"><button type="button" class="btn small ghost" data-act="cal-prev" aria-label="Mois précédent">‹</button><b>${cap(MOIS_LONG[M - 1])} ${Y}</b><button type="button" class="btn small ghost" data-act="cal-next" aria-label="Mois suivant">›</button></div>
       <div class="cal-grid">${["lun", "mar", "mer", "jeu", "ven", "sam", "dim"].map(j => `<span class="cal-w">${j}</span>`).join("")}${cells}</div>
@@ -1265,9 +1248,9 @@ function ajView(week, m){
       <span class="item-sub">Si l'heure de fin est avant l'heure de début, l'indispo finit le lendemain.</span>
       <div class="actions"><button type="button" class="btn primary" data-act="add-aj">Ajouter</button><button type="button" class="btn ghost" data-act="aj-cancel">Annuler</button></div>
     </div></div>` : `<div class="addrow"><button type="button" class="btn small" data-act="aj-open"${ro}>Ajouter une indispo</button></div>`;
-  return `<section class="sec"><h2>Mes indispos hors travail</h2>
-    <div class="panel list">${rows || `<div class="item"><span class="muted">Aucune pour cette garde.${currentReg().cycle.actif !== false ? " Les postes de ton cycle de travail sont déjà comptés tout seuls." : ""}</span></div>`}${form}</div>
-  </section>`;
+  return `<details class="acc sec-acc" data-acc="indispos-garde"${accOpen("indispos-garde")}><summary><span class="autre-t"><span>Mes indispos sur cette garde</span><small class="tnum">${list.length ? list.length + " notée" + (list.length > 1 ? "s" : "") : "aucune"}</small></span></summary>
+    <div class="panel list">${rows || `<div class="item"><span class="muted">Aucune pour cette garde.${currentReg().cycle.actif !== false ? " Ton travail est déjà compté tout seul." : ""}</span></div>`}${form}</div>
+  </details>`;
 }
 
 function partInfo(nom, sl, s, e){
@@ -1620,12 +1603,23 @@ function weekNow(reg){
   return null;
 }
 /* ---------- Tableau de garde des autres équipes (dispos + astreintes) ---------- */
-function gardeModeChips(reg){
-  const m = S.ui.gardeMode || "moi", eq = equipeOf(reg);
-  const c = (v, l) => `<button type="button" class="chip${m === v ? " on" : ""}" role="radio" aria-checked="${m === v}" data-act="garde-mode" data-v="${v}">${l}</button>`;
-  return `<div class="chips seg-mode" role="radiogroup" aria-label="Quelle garde">${c("moi", eq ? `Ma garde (équipe ${eq})` : "Ma garde")}${c("autres", "Autres équipes")}</div>`;
+/* ---------- Onglet Équipes : dispos sur les autres équipes + astreintes ---------- */
+function equipesChips(){
+  const m = S.ui.eqMode || "gardes";
+  const c = (v, l) => `<button type="button" class="chip${m === v ? " on" : ""}" role="radio" aria-checked="${m === v}" data-act="eq-mode" data-v="${v}">${l}</button>`;
+  return `<div class="chips seg-mode" role="radiogroup" aria-label="Affichage">${c("gardes", "Mes dispos")}${c("bilan", "Bilan")}</div>`;
 }
 function astreintesOf(reg, d){ return (((reg.astreintes || {})[d]) || []).slice().sort((a, b) => parseLocal(a.debut) - parseLocal(b.debut)); }
+// Une astreinte appartient à la plage de dispo qu'elle chevauche
+function astDansPlage(a, r){ const sl = slotOf(a); return sl.s < r.e && sl.e > r.s; }
+function astParPlage(reg, d, rs){
+  const by = new Map(), orphans = [];
+  for(const a of astreintesOf(reg, d)){
+    const r = rs.find(x => astDansPlage(a, x));
+    if(r){ if(!by.has(r.sig)) by.set(r.sig, []); by.get(r.sig).push(a); } else orphans.push(a);
+  }
+  return { by, orphans };
+}
 function etatAutre(o, reg){
   const done = ((reg.saisiesAutres || {})[o.d]) || [], skip = ((reg.nonMisAutres || {})[o.d]) || [], pm = ((reg.persoAutres || {})[o.d]) || {}, pn = ((reg.persoNotesAutres || {})[o.d]) || {};
   const mis = new Set(), pas = new Set(), misR = [], aSaisir = new Set();
@@ -1641,23 +1635,15 @@ function etatAutre(o, reg){
   for(const a of astreintesOf(reg, o.d)){ const sl = slotOf(a); for(let h = sl.s; h < sl.e; h++) ast.set(h, a); }
   return { mis, pas, misR, ast, aSaisir };
 }
-function autresGardeView(reg){
-  const list = autresGardesDispo(reg, AUTRES_N);
-  if(list == null) return `<section class="sec"><h2>Autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde pour voir les gardes des autres équipes.</p></div></section>`;
-  if(!list.length) return `<section class="sec"><h2>Autres équipes</h2><div class="panel"><p class="muted" style="margin:0">Aucune garde à venir.</p></div></section>`;
-  const o = list.find(x => x.d === S.ui.autreSel) || list[0], m = o.m, st = etatAutre(o, reg);
-  let astH = 0, misH = st.mis.size / CPH, dispoH = 0;
-  for(const [h, c] of m.cells){ if(!c.busy) dispoH++; if(st.ast.has(h)) astH++; }
-  astH /= CPH; dispoH /= CPH;
-  const sel = `<label for="ag-sel" class="sr-lab">Garde<select id="ag-sel">${list.map(x => `<option value="${x.d}"${x.d === o.d ? " selected" : ""}>Équipe ${x.eq} · ${esc(weekLabel(x.week).replace(/ \d{4}$/, ""))}</option>`).join("")}</select></label>`;
-  // résumé
-  const astList = astreintesOf(reg, o.d);
-  const summary = `<section class="panel summary" aria-label="Résumé">
-    <div class="sum-main"><span class="big tnum ok">${fmtNum(astH)}<small> h</small></span><span class="sum-lbl">d'astreinte</span></div>
-    <div class="sum-meta tnum"><span>${fmtNum(misH)} h mises dispo</span><span>·</span><span>${fmtNum(dispoH)} h où tu es libre</span><span>·</span><span>${fmtNum(m.cells.size / CPH)} h de garde</span></div>
-  </section>`;
-  // tableau
-  const d0 = Math.floor(m.g0 / CPD), d1 = Math.floor((m.g1 - 1) / CPD);
+function gardeAutreStatut(reg, x){
+  const rs = dispoRanges(x.m); if(!rs.length) return "pas dispo";
+  const done = ((reg.saisiesAutres || {})[x.d]) || [], pm = ((reg.persoAutres || {})[x.d]) || {}, pn = ((reg.persoNotesAutres || {})[x.d]) || {}, sk = ((reg.nonMisAutres || {})[x.d]) || [];
+  const n = rs.filter(r => done.includes(r.sig) || persoNote(pn, r.sig, pm[r.sig]) === "ok" || sk.includes(r.sig)).length;
+  if(astreintesOf(reg, x.d).length) return "astreinte";
+  return n === rs.length ? "à jour" : `${n}/${rs.length} faites`;
+}
+function autreBoard(o, reg, st){
+  const m = o.m, d0 = Math.floor(m.g0 / CPD), d1 = Math.floor((m.g1 - 1) / CPD);
   let rows = `<div class="row scale" aria-hidden="true"><div></div><div class="ticks"><span style="left:0">0h</span><span style="left:25%">6h</span><span style="left:50%">12h</span><span style="left:75%">18h</span><span style="left:100%">24h</span></div></div>`;
   for(let d = d0; d <= d1; d++){
     const segs = [];
@@ -1678,44 +1664,126 @@ function autresGardeView(reg){
     const segHtml = segs.map(sg => {
       const w = (sg.n / CPD * 100).toFixed(4), txt = sg.n >= 3 * CPH && sg.lbl ? `<i>${esc(sg.lbl)}</i>` : "";
       const title = `${fmtSlot({ s: sg.h, e: sg.h + sg.n })}${sg.lbl ? " · " + sg.lbl : ""}`;
-      if(sg.k === "mis" || sg.k === "libre" || sg.k === "pas" || sg.k === "ast") return `<button type="button" class="seg a-${sg.k}" style="width:${w}%" data-act="ag-seg" data-s="${sg.h}" data-e="${sg.h + sg.n}" data-k="${sg.k}" title="${esc(title)}" aria-label="${esc(title)}">${txt}</button>`;
       return `<span class="seg a-${sg.k}" style="width:${w}%" title="${esc(title)}">${txt}</span>`;
     }).join("");
     rows += `<div class="row"><div class="rlab"><span class="rday${fer ? " rfer" : ""}">${JOURS[date.getUTCDay()].replace(".", "")}</span><span class="rnum tnum">${date.getUTCDate()}</span>${code ? `<span class="rcode" title="${esc(POSTE[code] || code)}">${esc(code)}</span>` : ""}</div><div class="bar">${segHtml}</div></div>`;
   }
-  const board = `<section class="sec"><h2>Tableau · équipe ${o.eq}</h2><div class="panel board">${rows}
-    <div class="legend"><span><b class="a-ast"></b>Astreinte</span><span><b class="a-mis"></b>Mis dispo</span><span><b class="a-libre"></b>Libre, pas encore mis</span><span><b class="a-pas"></b>Pas mis</span><span><b class="a-busy"></b>Travail / indispo</span><span><b class="s-hors" style="border:1px solid var(--line)"></b>Hors garde</span></div>
-    <p class="item-sub" style="margin:0">Touche un créneau pour noter une astreinte.</p></div></section>`;
-  // astreintes
+  return `<div class="panel board">${rows}
+    <div class="legend"><span><b class="a-ast"></b>Astreinte</span><span><b class="a-mis"></b>Mis dispo</span><span><b class="a-libre"></b>Libre</span><span><b class="a-pas"></b>Pas mis</span><span><b class="a-busy"></b>Travail / indispo</span></div></div>`;
+}
+function equipesView(reg){
+  if((S.ui.eqMode || "gardes") === "bilan") return equipesChips() + bilanView(reg);
+  const list = autresGardesDispo(reg, AUTRES_N);
+  if(list == null) return equipesChips() + `<div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde.</p></div>`;
+  if(!list.length) return equipesChips() + `<div class="panel"><p class="muted" style="margin:0">Aucune garde à venir.</p></div>`;
+  const o = list.find(x => x.d === S.ui.autreSel) || list[0], m = o.m, st = etatAutre(o, reg);
+  const sel = `<label for="ag-sel" class="sr-lab">Garde<select id="ag-sel">${list.map(x => `<option value="${x.d}"${x.d === o.d ? " selected" : ""}>Équipe ${x.eq} · ${esc(weekLabel(x.week).replace(/ \d{4}$/, ""))} · ${esc(gardeAutreStatut(reg, x))}</option>`).join("")}</select></label>`;
+  let astH = 0, libreH = 0;
+  for(const [h, c] of m.cells){ if(!c.busy) libreH++; if(st.ast.has(h)) astH++; }
+  astH /= CPH; libreH /= CPH;
+  const misH = st.mis.size / CPH;
+  const resume = `<section class="panel summary" aria-label="Résumé"><div class="bl-kpis k3">
+      <div><span class="big tnum bl-n">${fmtNum(misH)}<small> h</small></span><span class="sum-lbl">mises dispo</span></div>
+      <div><span class="big tnum ok">${fmtNum(astH)}<small> h</small></span><span class="sum-lbl">d'astreinte</span></div>
+      <div><span class="big tnum bl-m">${fmtNum(libreH)}<small> h</small></span><span class="sum-lbl">où tu es libre</span></div>
+    </div></section>`;
+  // Liste des plages à saisir dans NexSIS
+  const rs = dispoRanges(m), done = ((reg.saisiesAutres || {})[o.d]) || [], skip = ((reg.nonMisAutres || {})[o.d]) || [];
+  const pmap = ((reg.persoAutres || {})[o.d]) || {}, pnotes = ((reg.persoNotesAutres || {})[o.d]) || {};
+  const ap = astParPlage(reg, o.d, rs);
+  const rows = rangeRows(rs, done, { idp: "sx-" + o.d, data: r => `data-saisi-autre="${o.d}" data-sig="${esc(r.sig)}"`, skip, skipData: r => `data-pasmis-autre="${o.d}" data-sig="${esc(r.sig)}"`, perso: pmap, persoKey: o.d, persoNotes: pnotes, ast: ap.by, astEq: o.eq });
+  const orph = ap.orphans.map(a => { const sl = slotOf(a); return `<div class="item"><div class="item-main"><span class="who tnum">Astreinte · ${esc(rangeTxt(sl))}</span><span class="item-sub">${esc(remplaceTxt(a))}</span></div><button type="button" class="chip x" data-act="ag-rm" data-d="${o.d}" data-id="${esc(a.id)}" aria-label="Retirer cette astreinte">×</button></div>`; }).join("");
+  const liste = `<section class="sec"><h2>Mes dispos · équipe ${o.eq}</h2><div class="panel list">${rows || `<div class="item"><span class="muted">Pas dispo sur cette garde (travail ou indispos).</span></div>`}${orph}
+    ${rs.length ? `<div class="addrow"><button type="button" class="btn small" data-act="copy-autre" data-v="${o.d}">Copier la liste</button></div>` : ""}</div></section>`;
+  // Message au chef de garde
+  const lst = (st.misR.length ? st.misR : rs).slice().sort((a, b) => a.s - b.s);
+  const msg = `Salut,\nPour la garde de l'équipe ${o.eq} ${weekRange(o.week)}, ${st.misR.length ? "je me suis mis dispo" : "je suis dispo"} :\n${lst.map(x => "• " + rangeTxt(x)).join("\n") || "(aucune dispo sur cette garde)"}\nN'hésite pas si tu as besoin de moi.${reg.signature ? "\n" + reg.signature : ""}`;
+  const msgSec = `<details class="acc sec-acc" data-acc="msg-chef"${accOpen("msg-chef")}><summary>Message au chef de garde</summary>
+    <div class="panel msgbox"><textarea id="ag-msg" aria-label="Message au chef de garde">${esc(msg)}</textarea>
+    <div class="actions"><button type="button" class="btn primary" data-act="ag-copy">Copier le message</button></div></div></details>`;
+  return equipesChips() + `<div class="ag-sel">${sel}</div>` + resume + `<section class="sec"><h2>Tableau · équipe ${o.eq}</h2>${autreBoard(o, reg, st)}</section>` + liste + msgSec + astSheet(reg, list);
+}
+function remplaceTxt(a){ return a.remplace === undefined || a.remplace === null ? "Remplacement à préciser" : a.remplace ? `Tu remplaces ${a.remplace}` : "Sans remplacer personne"; }
+// Bloc « Mis d'astreinte » d'une plage (dans la liste des dispos)
+function astBlock(attrs, r, i){
+  const aList = attrs.ast.get(r.sig) || [], on = aList.length > 0, d = attrs.persoKey;
   const ro = S.readOnly ? " disabled" : "";
-  const items = astList.map(a => { const sl = slotOf(a); return `<div class="item"><div class="item-main"><span class="who tnum">${esc(rangeTxt(sl))}</span><span class="item-sub tnum">${fmtDur(sl.e - sl.s)}${a.note ? " · " + esc(a.note) : ""}</span></div><button type="button" class="chip x" data-act="ag-rm" data-d="${o.d}" data-id="${esc(a.id)}" aria-label="Retirer cette astreinte"${ro}>×</button></div>`; }).join("");
-  const f = S.ui.agForm && S.ui.agForm.d === o.d ? S.ui.agForm : null;
-  const form = f ? `<div class="addrow" style="display:block"><div class="assign">
-      <div class="hours"><label for="ag-s">De<select id="ag-s">${hourOptions(m.g0, m.g1 - 1, f.s)}</select></label><label for="ag-e">À<select id="ag-e">${hourOptions(m.g0 + 1, m.g1, f.e)}</select></label></div>
-      <label for="ag-note">Note (facultatif)<input type="text" id="ag-note" autocomplete="off" placeholder="Chef de garde, engin, remarque…"></label>
-      <div class="actions"><button type="button" class="btn primary" data-act="ag-ok" data-d="${o.d}" data-eq="${o.eq}">Enregistrer l'astreinte</button><button type="button" class="btn ghost" data-act="ag-cancel">Annuler</button></div>
-    </div></div>` : `<div class="addrow"><button type="button" class="btn small" data-act="ag-new" data-d="${o.d}"${ro}>Noter une astreinte</button></div>`;
-  const astSec = `<section class="sec" id="ag-ast"><h2>Mes astreintes</h2><div class="panel list">${items || `<div class="item"><span class="muted">Aucune pour l'instant. Quand le chef de garde te prend, note-le ici ou colle son message plus bas.</span></div>`}${form}</div></section>`;
-  // message du chef
-  const rp = S.ui.agRp && S.ui.agRp.d === o.d ? S.ui.agRp : null;
-  const chefSec = `<section class="sec"><h2>Message du chef de garde</h2><div class="panel rp">
-    ${rp ? `<p class="rp-quote">« ${esc(rp.txt.length > 160 ? rp.txt.slice(0, 157) + "…" : rp.txt)} »</p>
-      ${rp.doute ? `<div class="notice"><b>À vérifier :</b> ${esc(rp.doute)}</div>` : ""}
-      ${rp.statut === "non" ? `<p style="margin:0">Il n'a pas besoin de toi sur cette garde.</p>` : rp.pieces.length ? `<div class="rp-slots">${rp.pieces.map((x, i) => `<label class="chk" for="agp-${i}"><input type="checkbox" id="agp-${i}" data-agp="${i}"${x.on ? " checked" : ""}> <span class="tnum">${esc(rangeTxt(x))} (${fmtDur(x.e - x.s)})</span></label>`).join("")}</div>` : `<p class="item-sub" style="margin:0">Aucun créneau reconnu dans le message.</p>`}
-      <div class="actions">${rp.statut !== "non" && rp.pieces.length ? `<button type="button" class="btn primary" data-act="agrp-ok" data-d="${o.d}" data-eq="${o.eq}">Noter ces astreintes</button>` : ""}<button type="button" class="btn ghost" data-act="agrp-cancel">Annuler</button></div>`
-    : `<label for="agrp-txt">Colle ici le message où il te met d'astreinte<textarea id="agrp-txt" placeholder="Par exemple : « Je te mets d'astreinte samedi de 8h à 20h »">${esc(S.ui.agRpTxt || "")}</textarea></label>
-      <div class="actions"><button type="button" class="btn primary" data-act="agrp-go" data-d="${o.d}">Analyser le message</button></div>
-      <p class="item-sub" style="margin:0">L'analyse se fait sur ton téléphone. Vérifie les créneaux cochés avant de valider.</p>`}
-  </div></section>`;
-  // message au chef
-  const lst = (st.misR.length ? st.misR : dispoRanges(m)).slice().sort((a, b) => a.s - b.s);
-  const misTxt = lst.map(x => "• " + rangeTxt(x)).join("\n");
-  const msg = `Salut,\nPour la garde de l'équipe ${o.eq} ${weekRange(o.week)}, ${st.misR.length ? "je me suis mis dispo" : "je suis dispo"} :\n${misTxt || "(aucune dispo sur cette garde)"}\nN'hésite pas si tu as besoin de moi.${currentReg().signature ? "\n" + currentReg().signature : ""}`;
-  const msgSec = `<section class="sec"><h2>Message au chef de garde</h2><div class="panel msgbox">
-    <textarea id="ag-msg" aria-label="Message au chef de garde">${esc(msg)}</textarea>
-    <div class="actions"><button type="button" class="btn primary" data-act="ag-copy">Copier le message</button><button type="button" class="btn ghost" data-act="ag-dispos">Gérer mes dispos de cette garde</button></div>
-  </div></section>`;
-  return `<div class="ag-sel">${sel}</div>` + summary + board + astSec + chefSec + msgSec;
+  let info = "";
+  if(on){
+    const entier = aList.length === 1 && slotOf(aList[0]).s === r.s && slotOf(aList[0]).e === r.e;
+    const rem = aList[0].remplace;
+    const remBtn = rem === undefined || rem === null
+      ? `<button type="button" class="btn small primary" data-act="ast-ask" data-d="${d}" data-sig="${esc(r.sig)}" data-eq="${attrs.astEq}">Tu remplaces quelqu'un ?</button>`
+      : `<button type="button" class="pill ${rem ? "p-oui" : "p-non"} pill-btn" data-act="ast-ask" data-d="${d}" data-sig="${esc(r.sig)}" data-eq="${attrs.astEq}" aria-label="Changer : ${esc(remplaceTxt(aList[0]))}">${esc(rem ? "Remplace " + rem : "Sans remplacer personne")}</button>`;
+    const ed = S.ui.astEdit && S.ui.astEdit.d === d && S.ui.astEdit.sig === r.sig;
+    info = `<div class="ast-info">
+        ${entier && !ed ? "" : `<div class="perso-list">${aList.map(a => `<span class="pill p-oui perso-pill tnum">${esc(rangeTxt(slotOf(a)))}${ed && aList.length > 1 ? `<button type="button" class="pp-x" data-act="ast-rm" data-d="${d}" data-id="${esc(a.id)}" aria-label="Retirer ce créneau">×</button>` : ""}</span>`).join("")}</div>`}
+        <div class="ast-acts">${remBtn}${ed ? "" : `<button type="button" class="btn small ghost" data-act="ast-edit" data-d="${d}" data-sig="${esc(r.sig)}"${ro}>Ajuster les heures</button>`}</div>
+        ${ed ? `<div class="perso-ed">
+          <div class="hours"><label for="ae-s">De<select id="ae-s">${hourOptions(r.s, r.e - 1, slotOf(aList[0]).s)}</select></label><label for="ae-e">À<select id="ae-e">${hourOptions(r.s + 1, r.e, slotOf(aList[0]).e)}</select></label></div>
+          <div class="actions"><button type="button" class="btn small primary" data-act="ast-set" data-d="${d}" data-sig="${esc(r.sig)}" data-eq="${attrs.astEq}">Enregistrer ces heures</button><button type="button" class="btn small" data-act="ast-add" data-d="${d}" data-sig="${esc(r.sig)}" data-eq="${attrs.astEq}">Ajouter un 2e créneau</button><button type="button" class="btn small ghost" data-act="ast-close">Terminé</button></div>
+        </div>` : ""}
+      </div>`;
+  }
+  return `<div class="ast-row"><label class="chk ast-ck${on ? " on" : ""}" for="${attrs.idp}-a${i}"><input type="checkbox" id="${attrs.idp}-a${i}" data-ast-autre="${d}" data-eq="${attrs.astEq}" data-sig="${esc(r.sig)}"${on ? " checked" : ""}${ro}> Mis d'astreinte</label>${info}</div>`;
+}
+// Tous les noms connus (contacts, demandes, remplaçants, entraide)
+function tousLesNoms(reg){
+  const map = new Map();
+  const add = n => { n = String(n || "").trim(); if(n){ const k = n.toLowerCase(); if(!map.has(k)) map.set(k, n); } };
+  (reg.contacts || []).forEach(c => add(c.nom));
+  for(const w of S.weeks){ (w.demandes || []).forEach(d => add(d.nom)); (w.remplacements || []).forEach(r => add(r.nom)); }
+  (reg.rendus || []).forEach(r => add(r.nom));
+  (reg.echanges || []).forEach(x => add(x.nom));
+  for(const l of Object.values(reg.astreintes || {})) for(const a of l) add(a.remplace);
+  return [...map.values()].sort((a, b) => a.localeCompare(b, "fr"));
+}
+// Fenêtre « Tu remplaces quelqu'un ? »
+function astSheet(reg, list){
+  const q = S.ui.astAsk; if(!q) return "";
+  const o = (list || []).find(x => x.d === q.d); if(!o){ S.ui.astAsk = null; return ""; }
+  const r = dispoRanges(o.m).find(x => x.sig === q.sig) || rangeBounds(q.sig);
+  const aList = astreintesOf(reg, q.d).filter(a => astDansPlage(a, r));
+  const quand = aList.length ? aList.map(a => rangeTxt(slotOf(a))).join(" + ") : rangeTxt(r);
+  let body;
+  if(q.step === "oui"){
+    const noms = tousLesNoms(reg), cur = aList[0] && aList[0].remplace;
+    body = `<p class="sh-q">Qui remplaces-tu ?</p>
+      ${q.nouveau ? `<label for="ast-nom">Nom de la personne<input type="text" id="ast-nom" autocomplete="off" placeholder="Prénom Nom" value="${esc(q.nom || "")}"></label>
+        ${noms.length ? `<button type="button" class="lnk" data-act="ast-liste">Choisir dans la liste</button>` : ""}`
+      : `<label for="ast-qui" class="sr-lab">Personne<select id="ast-qui"><option value="">Choisir…</option>${noms.map(n => `<option${cur && same(cur, n) ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+        <button type="button" class="lnk" data-act="ast-nouveau">+ Ajouter une personne</button>`}
+      <div class="sh-btns"><button type="button" class="btn primary" data-act="ast-valider">Valider</button><button type="button" class="btn ghost" data-act="ast-retour">Retour</button></div>`;
+  } else {
+    body = `<p class="sh-q">Tu remplaces quelqu'un ?</p>
+      <div class="sh-btns"><button type="button" class="btn primary sh-big" data-act="ast-oui">Oui</button><button type="button" class="btn sh-big" data-act="ast-non">Non, personne</button></div>`;
+  }
+  return `<div class="sheet-bg" data-act="ast-fermer"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t">
+      <div class="sh-head"><b id="sh-t">Mis d'astreinte · équipe ${esc(o.eq)}</b><button type="button" class="chip x" data-act="ast-fermer" aria-label="Fermer">×</button></div>
+      <p class="sh-sub tnum">${esc(quand)}</p>
+      ${body}
+    </div>`;
+}
+// Écrit les astreintes d'une plage (remplace celles qui la chevauchent)
+function setAstPlage(reg, d, r, slots, eq, remplace){
+  const all = clone(reg.astreintes || {}), today = dayNum(nowLocal());
+  for(const k of Object.keys(all)) if(dayNum(k) < today - GARDE_HISTO) delete all[k];
+  const garde = (all[d] || []).filter(a => !astDansPlage(a, r));
+  const merged = [];
+  for(const x of slots.slice().sort((a, b) => a.s - b.s)){ const l = merged[merged.length - 1]; if(l && x.s <= l.e) l.e = Math.max(l.e, x.e); else merged.push({ s: x.s, e: x.e }); }
+  for(const x of merged){ const e = { id: uid("a"), eq, sig: r.sig, debut: isoFromHour(x.s), fin: isoFromHour(x.e), note: "" }; if(remplace !== undefined) e.remplace = remplace; garde.push(e); }
+  if(garde.length) all[d] = garde; else delete all[d];
+  return all;
+}
+function plageDe(reg, d, sig){
+  const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === d);
+  return (o && dispoRanges(o.m).find(x => x.sig === sig)) || { ...rangeBounds(sig), sig };
+}
+function astreinteNow(reg){
+  const now = parseLocal(nowLocal()), h = Math.floor(now / U);
+  for(const [d, list] of Object.entries(reg.astreintes || {})) for(const a of list){ const sl = slotOf(a); if(h >= sl.s && h < sl.e) return { a, sl, h, d }; }
+  return null;
 }
 /* ---------- Bilan : heures mises dispo vs astreintes, par équipe ---------- */
 const GARDE_HISTO = 800; // jours d'historique gardés pour le bilan
@@ -1730,13 +1798,20 @@ function gardeBornes(d, eq){
   return { debut: per[0].debut, fin: per.reduce((x, p) => parseLocal(p.fin) > parseLocal(x) ? p.fin : x, per[0].fin) };
 }
 function dateCourte(d){ const t = new Date(dayNum(d) * 86400000), y = t.getUTCFullYear(); return `${dn(t.getUTCDate())} ${MOIS[t.getUTCMonth()]}${y !== new Date(dayNum(nowLocal()) * 86400000).getUTCFullYear() ? " " + y : ""}`; }
+function gardeDebutEquipe(eq, day){ const a = dayNum(CENTRE.equipes[eq]), step = (CENTRE.semaines || 4) * 7; return dayStr(a + Math.floor((day - a) / step) * step); }
 function bilanGardes(reg){
   const mine = equipeOf(reg); if(!mine) return null;
   const sa = reg.saisiesAutres || {}, pa = reg.persoAutres || {}, pn = reg.persoNotesAutres || {}, as = reg.astreintes || {}, man = reg.bilanManuel || {};
-  const days = new Set([...Object.keys(sa), ...Object.keys(pa), ...Object.keys(as), ...Object.keys(man)]);
+  const rf = new Map();
+  for(const r of (reg.renforts || [])){
+    if(!r.eq || !CENTRE.equipes[r.eq] || r.eq === mine) continue;
+    const sl = slotOf(r), d = gardeDebutEquipe(r.eq, Math.floor(sl.s / CPD)), x = rf.get(d) || { eq: r.eq, h: 0 };
+    x.h += (sl.e - sl.s) / CPH; rf.set(d, x);
+  }
+  const days = new Set([...Object.keys(sa), ...Object.keys(pa), ...Object.keys(as), ...Object.keys(man), ...rf.keys()]);
   const now = parseLocal(nowLocal()), out = [];
   for(const d of days){
-    const eq = (man[d] && man[d].eq) || equipeDeGarde(d) || ((as[d] || [])[0] || {}).eq;
+    const eq = (man[d] && man[d].eq) || equipeDeGarde(d) || ((as[d] || [])[0] || {}).eq || (rf.get(d) || {}).eq;
     if(!eq || eq === mine) continue;
     let misH, astH;
     if(man[d]){ misH = Number(man[d].misH) || 0; astH = Number(man[d].astH) || 0; }
@@ -1747,9 +1822,10 @@ function bilanGardes(reg){
       for(const a of (as[d] || [])){ const sl = slotOf(a); for(let h = sl.s; h < sl.e; h++) ast.add(h); }
       misH = mis.size / CPH; astH = ast.size / CPH;
     }
-    if(!misH && !astH) continue;
+    const renfH = rf.has(d) ? rf.get(d).h : 0;
+    if(!misH && !astH && !renfH) continue;
     const b = gardeBornes(d, eq);
-    out.push({ d, eq, ...b, misH, astH, manuel: !!man[d], statut: parseLocal(b.debut) > now ? "avenir" : parseLocal(b.fin) > now ? "encours" : "fini" });
+    out.push({ d, eq, ...b, misH, astH, renfH, manuel: !!man[d], statut: parseLocal(b.debut) > now ? "avenir" : parseLocal(b.fin) > now ? "encours" : "fini" });
   }
   return out.sort((x, y) => dayNum(y.d) - dayNum(x.d));
 }
@@ -1762,44 +1838,45 @@ function bilanStats(reg){
   const eqs = Object.keys(CENTRE.equipes).filter(k => k !== equipeOf(reg));
   const parEq = eqs.map(eq => {
     const l = comptees.filter(r => r.eq === eq);
-    return { eq, gardes: l.length, misH: l.reduce((t, r) => t + r.misH, 0), astH: l.reduce((t, r) => t + r.astH, 0), avecAst: l.filter(r => r.astH > 0).length };
+    return { eq, gardes: l.length, misH: l.reduce((t, r) => t + r.misH, 0), astH: l.reduce((t, r) => t + r.astH, 0), renfH: l.reduce((t, r) => t + r.renfH, 0), avecAst: l.filter(r => r.astH > 0).length };
   });
-  const tot = { gardes: comptees.length, misH: comptees.reduce((t, r) => t + r.misH, 0), astH: comptees.reduce((t, r) => t + r.astH, 0), avecAst: comptees.filter(r => r.astH > 0).length };
+  const tot = { gardes: comptees.length, misH: comptees.reduce((t, r) => t + r.misH, 0), astH: comptees.reduce((t, r) => t + r.astH, 0), renfH: comptees.reduce((t, r) => t + r.renfH, 0), avecAst: comptees.filter(r => r.astH > 0).length };
   return { per, rows, comptees, parEq, tot, avenir: rows.filter(r => r.statut === "avenir") };
 }
 const pctOf = (a, b) => b ? Math.round(a / b * 100) : 0;
 function bilanTexte(reg, st){
   const first = st.comptees.length ? st.comptees[st.comptees.length - 1] : null;
-  const lignes = st.parEq.map(x => `• Équipe ${x.eq} : ${x.gardes} garde${x.gardes > 1 ? "s" : ""}, ${fmtNum(x.misH)} h mises dispo, ${fmtNum(x.astH)} h d'astreinte (${pctOf(x.astH, x.misH)} %)${x.gardes ? `, astreinte sur ${x.avecAst} garde${x.avecAst > 1 ? "s" : ""} sur ${x.gardes}` : ""}`);
+  const lignes = st.parEq.map(x => `• Équipe ${x.eq} : ${x.gardes} garde${x.gardes > 1 ? "s" : ""}, ${fmtNum(x.misH)} h mises dispo, ${fmtNum(x.astH)} h d'astreinte (${pctOf(x.astH, x.misH)} %)${x.renfH ? `, ${fmtNum(x.renfH)} h de renfort` : ""}${x.gardes ? `, astreinte sur ${x.avecAst} garde${x.avecAst > 1 ? "s" : ""} sur ${x.gardes}` : ""}`);
   return `Bilan de mes dispos sur les autres équipes – ${CENTRE.nom}${first ? `, depuis le ${dateCourte(first.d)}` : ""}\n` + lignes.join("\n") +
-    `\nTotal : ${fmtNum(st.tot.misH)} h mises dispo, ${fmtNum(st.tot.astH)} h d'astreinte (${pctOf(st.tot.astH, st.tot.misH)} %).`;
+    `\nTotal : ${fmtNum(st.tot.misH)} h mises dispo, ${fmtNum(st.tot.astH)} h d'astreinte (${pctOf(st.tot.astH, st.tot.misH)} %)${st.tot.renfH ? `, ${fmtNum(st.tot.renfH)} h de renfort` : ""}.`;
 }
 function bilanView(reg){
   const st = bilanStats(reg);
-  if(st == null) return `<h2 class="view-title">Bilan</h2><div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde pour voir ton bilan sur les autres équipes.</p></div>`;
+  if(st == null) return `<div class="panel"><p class="muted" style="margin:0">Choisis ton équipe dans Réglages › Mes plages de garde pour voir ton bilan sur les autres équipes.</p></div>`;
   const ro = S.readOnly ? " disabled" : "";
   const perChips = `<div class="chips seg-mode" role="radiogroup" aria-label="Période">${BILAN_PER.map(([v, l]) => `<button type="button" class="chip${st.per[0] === v ? " on" : ""}" role="radio" aria-checked="${st.per[0] === v}" data-act="bilan-per" data-v="${v}">${l}</button>`).join("")}</div>`;
   const t = st.tot;
   const resume = `<section class="panel summary" aria-label="Résumé">
-    <div class="bl-kpis"><div><span class="big tnum bl-n">${fmtNum(t.misH)}<small> h</small></span><span class="sum-lbl">mises dispo</span></div><div><span class="big tnum ok">${fmtNum(t.astH)}<small> h</small></span><span class="sum-lbl">d'astreinte</span></div></div>
+    <div class="bl-kpis k3"><div><span class="big tnum bl-n">${fmtNum(t.misH)}<small> h</small></span><span class="sum-lbl">mises dispo</span></div><div><span class="big tnum ok">${fmtNum(t.astH)}<small> h</small></span><span class="sum-lbl">d'astreinte</span></div><div><span class="big tnum bl-r">${fmtNum(t.renfH)}<small> h</small></span><span class="sum-lbl">de renfort</span></div></div>
     ${t.gardes ? `<div class="sum-meta tnum"><span>${pctOf(t.astH, t.misH)} % de tes dispos utilisées</span><span>·</span><span>astreinte sur ${t.avecAst} garde${t.avecAst > 1 ? "s" : ""} sur ${t.gardes}</span></div>`
       : `<p class="item-sub" style="margin:0">${st.avenir.length ? `Tes dispos sur ${st.avenir.length} garde${st.avenir.length > 1 ? "s" : ""} à venir seront comptées dès que la garde commence.` : "Aucune garde comptée pour l'instant."}</p>`}
   </section>`;
-  const max = Math.max(1, ...st.parEq.map(x => Math.max(x.misH, x.astH)));
+  const max = Math.max(1, ...st.parEq.map(x => Math.max(x.misH, x.astH, x.renfH)));
   const chart = `<section class="sec"><h2>Par équipe</h2><div class="panel bl-chart">
     ${st.parEq.map(x => `<div class="bl-eq">
       <div class="bl-head"><b>Équipe ${x.eq}</b>${x.gardes && !x.astH ? `<span class="pill p-non">Jamais d'astreinte</span>` : x.gardes ? `<span class="pill p-oui">${pctOf(x.astH, x.misH)} % utilisées</span>` : ""}</div>
       <div class="bl-bar" aria-label="Mis dispo : ${fmtNum(x.misH)} h"><span class="bl-mis" style="width:${(x.misH / max * 100).toFixed(2)}%"></span><em class="tnum">${fmtNum(x.misH)} h</em></div>
       <div class="bl-bar" aria-label="Astreinte : ${fmtNum(x.astH)} h"><span class="bl-ast" style="width:${(x.astH / max * 100).toFixed(2)}%"></span><em class="tnum">${fmtNum(x.astH)} h</em></div>
+      ${x.renfH ? `<div class="bl-bar" aria-label="Renfort : ${fmtNum(x.renfH)} h"><span class="bl-renf" style="width:${(x.renfH / max * 100).toFixed(2)}%"></span><em class="tnum">${fmtNum(x.renfH)} h</em></div>` : ""}
       <div class="item-sub tnum">${x.gardes ? `${x.gardes} garde${x.gardes > 1 ? "s" : ""} · astreinte sur ${x.avecAst}` : "Aucune garde comptée sur la période"}</div>
     </div>`).join("")}
-    <div class="legend"><span><b class="bl-mis"></b>Mis dispo</span><span><b class="bl-ast"></b>Astreinte</span></div>
+    <div class="legend"><span><b class="bl-mis"></b>Mis dispo</span><span><b class="bl-ast"></b>Astreinte</span><span><b class="bl-renf"></b>Renfort</span></div>
   </div></section>`;
-  const ligne = r => `<tr${r.statut === "avenir" ? ' class="bl-futur"' : ""}><td>${esc(dateCourte(r.d))}${r.statut === "encours" ? ` <span class="pill p-attente">en cours</span>` : r.statut === "avenir" ? ` <span class="pill">à venir</span>` : ""}${r.manuel ? ` <button type="button" class="chip x" data-act="bm-rm" data-d="${r.d}" aria-label="Retirer cette garde saisie à la main"${ro}>×</button>` : ""}</td><td>${r.eq}</td><td class="num">${fmtNum(r.misH)} h</td><td class="num">${fmtNum(r.astH)} h</td><td class="num">${pctOf(r.astH, r.misH)} %</td></tr>`;
-  const table = `<section class="sec"><h2>Détail par garde</h2><div class="panel bl-tblw">${st.rows.length ? `<table class="bl-tbl tnum"><thead><tr><th>Garde du</th><th>Éq.</th><th class="num">Mis dispo</th><th class="num">Astr.</th><th class="num">%</th></tr></thead><tbody>${st.rows.map(ligne).join("")}</tbody>
-      <tfoot><tr><td colspan="2">Total</td><td class="num">${fmtNum(t.misH)} h</td><td class="num">${fmtNum(t.astH)} h</td><td class="num">${pctOf(t.astH, t.misH)} %</td></tr></tfoot></table>
+  const ligne = r => `<tr${r.statut === "avenir" ? ' class="bl-futur"' : ""}><td>${esc(dateCourte(r.d))}${r.statut === "encours" ? ` <span class="pill p-attente">en cours</span>` : r.statut === "avenir" ? ` <span class="pill">à venir</span>` : ""}${r.manuel ? ` <button type="button" class="chip x" data-act="bm-rm" data-d="${r.d}" aria-label="Retirer cette garde saisie à la main"${ro}>×</button>` : ""}</td><td>${r.eq}</td><td class="num">${fmtNum(r.misH)} h</td><td class="num">${fmtNum(r.astH)} h</td><td class="num">${fmtNum(r.renfH || 0)} h</td></tr>`;
+  const table = `<section class="sec"><h2>Détail par garde</h2><div class="panel bl-tblw">${st.rows.length ? `<table class="bl-tbl tnum"><thead><tr><th>Garde du</th><th>Éq.</th><th class="num">Mis dispo</th><th class="num">Astr.</th><th class="num">Renf.</th></tr></thead><tbody>${st.rows.map(ligne).join("")}</tbody>
+      <tfoot><tr><td colspan="2">Total</td><td class="num">${fmtNum(t.misH)} h</td><td class="num">${fmtNum(t.astH)} h</td><td class="num">${fmtNum(t.renfH)} h</td></tr></tfoot></table>
       ${st.avenir.length ? `<p class="item-sub" style="margin:8px 0 0">Les gardes à venir sont affichées mais pas comptées dans les totaux.</p>` : ""}`
-    : `<p class="muted" style="margin:0">Rien sur cette période. Les heures se remplissent quand tu coches « Saisi » dans Dispos › Autres équipes et quand tu notes tes astreintes dans Garde › Autres équipes.</p>`}
+    : `<p class="muted" style="margin:0">Rien sur cette période. Les heures se remplissent quand tu coches « Saisi » ou « Mis d'astreinte » dans Équipes, et avec tes renforts notés dans Entraide.</p>`}
     <div class="actions" style="margin-top:10px"><button type="button" class="btn primary" data-act="bilan-copy"${st.comptees.length ? "" : " disabled"}>Copier le bilan</button></div>
   </div></section>`;
   // garde passée saisie à la main
@@ -1820,28 +1897,7 @@ function bilanView(reg){
     </div>`
     : `<p class="item-sub" style="margin:0 0 10px">Pour compléter le bilan avec tes gardes d'avant l'appli, à partir de ce que tu retrouves dans NexSIS.</p><button type="button" class="btn small" data-act="bm-open"${ro}>Ajouter une garde passée</button>`}
   </div></section>`;
-  return `<h2 class="view-title">Bilan des autres équipes</h2>` + perChips + resume + chart + table + manuel;
-}
-// Ajoute des astreintes en fusionnant celles qui se chevauchent ou se touchent
-function addAstreintes(reg, d, eq, slots, note){
-  const all = clone(reg.astreintes || {}), today = dayNum(nowLocal());
-  for(const k of Object.keys(all)) if(dayNum(k) < today - GARDE_HISTO) delete all[k];
-  let list = (all[d] || []).map(a => ({ ...slotOf(a), id: a.id, eq: a.eq, note: a.note || "" }));
-  for(const x of slots) list.push({ s: x.s, e: x.e, id: uid("a"), eq, note: note || "" });
-  list.sort((a, b) => a.s - b.s);
-  const out = [];
-  for(const x of list){
-    const l = out[out.length - 1];
-    if(l && x.s <= l.e){ l.e = Math.max(l.e, x.e); if(x.note && !l.note.includes(x.note)) l.note = l.note ? l.note + " · " + x.note : x.note; }
-    else out.push({ ...x });
-  }
-  all[d] = out.map(x => ({ id: x.id, eq: x.eq || eq, debut: isoFromHour(x.s), fin: isoFromHour(x.e), note: x.note }));
-  return all;
-}
-function astreinteNow(reg){
-  const now = parseLocal(nowLocal()), h = Math.floor(now / U);
-  for(const [d, list] of Object.entries(reg.astreintes || {})) for(const a of list){ const sl = slotOf(a); if(h >= sl.s && h < sl.e) return { a, sl, h, d }; }
-  return null;
+  return perChips + resume + chart + table + manuel;
 }
 function nowCard(week, reg){
   const an = astreinteNow(reg);
@@ -1849,7 +1905,7 @@ function nowCard(week, reg){
     const { a, sl, h } = an;
     return `<section class="panel now" aria-label="En ce moment">
       <div class="line1"><b class="now-t">En ce moment</b><span class="pill p-oui">Astreinte équipe ${esc(a.eq || "")}</span></div>
-      <p class="now-main">Tu es d'astreinte jusqu'à ${esc(quand(sl.e, h))}${a.note ? ` · ${esc(a.note)}` : ""}.</p>
+      <p class="now-main">Tu es d'astreinte jusqu'à ${esc(quand(sl.e, h))}${a.remplace ? ` · tu remplaces ${esc(a.remplace)}` : ""}${a.note ? ` · ${esc(a.note)}` : ""}.</p>
     </section>`;
   }
   const wn = weekNow(reg); if(!wn) return "";
@@ -1897,6 +1953,8 @@ function bilanYears(reg){
   const ys = new Set([new Date().getFullYear()]);
   for(const w of S.weeks) for(const r of (w.remplacements || [])) if(!r.provisoire && !r.echange) ys.add(yearOf(slotOf(r)));
   for(const r of (reg.rendus || [])) ys.add(yearOf(slotOf(r)));
+  for(const r of renfortsTous(reg)) ys.add(yearOf(slotOf(r)));
+  for(const a of astreintesListe(reg)) if(a.remplace) ys.add(yearOf(slotOf(a)));
   return [...ys].sort((a, b) => b - a);
 }
 function bilanData(reg, year){
@@ -1907,7 +1965,18 @@ function bilanData(reg, year){
     const sl = slotOf(r); if(yearOf(sl) === year) add(r.nom, "pour", (sl.e - sl.s) / CPH);
   }
   for(const r of (reg.rendus || [])){ const sl = slotOf(r); if(yearOf(sl) === year) add(r.nom, "par", (sl.e - sl.s) / CPH); }
+  for(const a of astreintesListe(reg)) if(a.remplace){ const sl = slotOf(a); if(yearOf(sl) === year) add(a.remplace, "par", (sl.e - sl.s) / CPH); }
   return [...map.values()].sort((a, b) => Math.abs(b.par - b.pour) - Math.abs(a.par - a.pour) || (b.pour + b.par) - (a.pour + a.par));
+}
+function astreintesListe(reg){ const out = []; for(const [d, l] of Object.entries(reg.astreintes || {})) for(const a of l) out.push({ ...a, d }); return out; }
+// Renforts : notés à la main dans Entraide + astreintes « sans remplacer personne »
+function renfortsTous(reg){
+  return [...(reg.renforts || []).map(r => ({ ...r, src: "manuel" })), ...astreintesListe(reg).filter(a => a.remplace === "").map(a => ({ ...a, src: "ast" }))];
+}
+function entraideChips(){
+  const m = S.ui.entMode || "rempl";
+  const c = (v, l) => `<button type="button" class="chip${m === v ? " on" : ""}" role="radio" aria-checked="${m === v}" data-act="ent-mode" data-v="${v}">${l}</button>`;
+  return `<div class="chips seg-mode" role="radiogroup" aria-label="Entraide">${c("rempl", "Remplacements")}${c("renfort", "Renforts")}${c("echange", "Échanges")}</div>`;
 }
 function soldeTxt(x){
   const d = x.par - x.pour;
@@ -1930,14 +1999,22 @@ function entraideView(reg){
   const years = bilanYears(reg), year = years.includes(S.ui.year) ? S.ui.year : years[0];
   const data = bilanData(reg, year);
   const totPour = data.reduce((a, x) => a + x.pour, 0), totPar = data.reduce((a, x) => a + x.par, 0);
+  const rfs = renfortsTous(reg).filter(r => yearOf(slotOf(r)) === year).sort((a, b) => parseLocal(b.debut) - parseLocal(a.debut));
+  const hOf = r => { const sl = slotOf(r); return (sl.e - sl.s) / CPH; };
+  const renfH = rfs.reduce((t, r) => t + hOf(r), 0);
+  const mode = S.ui.entMode || "rempl";
   const rows = data.map(x => { const [t, cls] = soldeTxt(x); return `<div class="item"><div class="item-main"><span class="who">${esc(x.nom)}</span><span class="item-sub tnum">T'a remplacé ${fmtNum(x.pour)} h · Tu l'as remplacé ${fmtNum(x.par)} h</span></div><span class="pill ${cls}">${esc(t)}</span></div>`; }).join("");
-  const bilan = `<section class="sec"><h2>Entraide</h2>
-    <div class="panel list">
-      <div class="item"><div class="item-main"><span class="who tnum">${fmtNum(totPour)} h faites pour toi · ${fmtNum(totPar)} h rendues</span><span class="item-sub">Échanges de garde non comptés.</span></div>${years.length > 1 ? `<select id="bl-year" aria-label="Année">${years.map(y => `<option value="${y}"${y === year ? " selected" : ""}>${y}</option>`).join("")}</select>` : `<span class="pill p-non">${year}</span>`}</div>
-      ${rows || `<div class="item"><span class="muted">Personne pour l'instant. Les remplacements validés et ceux que tu fais pour les autres s'afficheront ici.</span></div>`}
+  const yearSel = years.length > 1 ? `<select id="bl-year" aria-label="Année">${years.map(y => `<option value="${y}"${y === year ? " selected" : ""}>${y}</option>`).join("")}</select>` : `<span class="pill p-non">${year}</span>`;
+  const head = `<section class="panel summary" aria-label="Résumé">
+    <div class="bl-kpis"><div><span class="big tnum bl-n">${fmtNum(totPour)}<small> h</small></span><span class="sum-lbl">faites pour toi</span></div><div><span class="big tnum ok">${fmtNum(totPar + renfH)}<small> h</small></span><span class="sum-lbl">rendues</span></div></div>
+    <div class="sum-meta tnum ent-meta"><span>dont ${fmtNum(renfH)} h en renfort · échanges non comptés</span>${yearSel}</div>
+  </section>`;
+  const bilan = `<section class="sec"><h2>Par personne</h2><div class="panel list">
+      ${rows || `<div class="item"><span class="muted">Personne pour l'instant.</span></div>`}
     </div></section>`;
 
   const rendus = (reg.rendus || []).filter(r => yearOf(slotOf(r)) === year).sort((a, b) => parseLocal(b.debut) - parseLocal(a.debut));
+  const viaAst = astreintesListe(reg).filter(a => a.remplace && yearOf(slotOf(a)) === year).map(a => { const sl = slotOf(a); return `<div class="item"><div class="item-main"><span class="who">${esc(a.remplace)}</span><span class="item-sub tnum">${esc(fmtSlot(sl))} · ${fmtDur(sl.e - sl.s)} · astreinte équipe ${esc(a.eq || "")}</span></div><span class="pill p-oui">Astreinte</span></div>`; }).join("");
   const rdList = rendus.map(r => { const sl = slotOf(r); return `<div class="item"><div class="item-main"><span class="who">${esc(r.nom)}</span><span class="item-sub tnum">${esc(fmtSlot(sl))} · ${fmtDur(sl.e - sl.s)}${r.note ? " · " + esc(r.note) : ""}</span></div><button type="button" class="chip x" data-act="rd-rm" data-id="${esc(r.id)}" aria-label="Supprimer"${ro}>×</button></div>`; }).join("");
   const rdForm = S.ui.rdOpen ? `<div class="addrow" style="display:block"><div class="assign">
       <label for="rd-nom">Qui as-tu remplacé ?<input type="text" id="rd-nom" list="people" autocomplete="off" placeholder="Prénom"></label>
@@ -1947,7 +2024,7 @@ function entraideView(reg){
       <label for="rd-note">Note (facultatif)<input type="text" id="rd-note" autocomplete="off" placeholder="Garde équipe C…"></label>
       <div class="actions"><button type="button" class="btn primary" data-act="rd-ok">Enregistrer</button><button type="button" class="btn ghost" data-act="rd-cancel">Annuler</button></div>
     </div></div>` : `<div class="addrow"><button type="button" class="btn small" data-act="rd-open"${ro}>J'ai remplacé un collègue</button></div>`;
-  const rdSec = `<section class="sec"><h3>Quand tu remplaces un collègue</h3><div class="panel list">${rdList || `<div class="item"><span class="muted">Note ici les fois où c'est toi qui rends service : ça compte dans le bilan.</span></div>`}${rdForm}</div></section>`;
+  const rdSec = `<section class="sec"><h2>Quand tu remplaces un collègue</h2><div class="panel list">${viaAst}${rdList || (viaAst ? "" : `<div class="item"><span class="muted">Note ici les fois où c'est toi qui rends service.</span></div>`)}${rdForm}</div></section>`;
 
   const exs = (reg.echanges || []).slice().sort((a, b) => dayNum(b.maGarde) - dayNum(a.maGarde));
   const exList = exs.map(x => {
@@ -1967,8 +2044,22 @@ function entraideView(reg){
       <div class="actions"><button type="button" class="btn primary" data-act="ex-ok">Enregistrer l'échange</button><button type="button" class="btn ghost" data-act="ex-cancel">Annuler</button></div>
     </div></div>`;
   } else exForm = `<div class="addrow"><button type="button" class="btn small" data-act="ex-open"${ro}>Noter un échange de garde</button></div>`;
-  const exSec = `<section class="sec"><h3>Échanges de garde</h3><div class="panel list">${exList || `<div class="item"><span class="muted">Tu échanges ta semaine avec quelqu'un d'une autre équipe ? Note-le ici : les deux plannings se mettent à jour.</span></div>`}${exForm}</div></section>`;
-  return bilan + rdSec + exSec;
+  const exSec = `<section class="sec"><h2>Échanges de garde</h2><div class="panel list">${exList || `<div class="item"><span class="muted">Tu échanges ta semaine avec quelqu'un d'une autre équipe ? Note-le ici : les deux plannings se mettent à jour.</span></div>`}${exForm}</div></section>`;
+  // Renforts
+  const mine = equipeOf(reg), autresEq = Object.keys(CENTRE.equipes).filter(k => k !== mine);
+  const parEq = autresEq.map(k => [k, rfs.filter(r => r.eq === k).reduce((t, r) => t + hOf(r), 0)]);
+  const rfList = rfs.map(r => { const sl = slotOf(r); return `<div class="item"><div class="item-main"><span class="who">Équipe ${esc(r.eq || "?")}</span><span class="item-sub tnum">${esc(fmtSlot(sl))} · ${fmtDur(sl.e - sl.s)}${r.note ? " · " + esc(r.note) : ""}</span></div>${r.src === "ast" ? `<span class="pill p-oui">Astreinte</span>` : `<button type="button" class="chip x" data-act="rf-rm" data-id="${esc(r.id)}" aria-label="Supprimer"${ro}>×</button>`}</div>`; }).join("");
+  const rfForm = S.ui.rfOpen ? `<div class="addrow" style="display:block"><div class="assign">
+      <label for="rf-eq">Équipe<select id="rf-eq">${autresEq.map(k => `<option value="${k}">Équipe ${k}</option>`).join("")}</select></label>
+      <label for="rf-day">Jour<input type="date" id="rf-day" value="${esc(dayStr(dayNum(nowLocal())))}"></label>
+      <div class="hr-row"><span class="hr-l">Horaires</span><select id="rf-de" aria-label="De">${hourSelOpts("19:00")}</select><span class="gm-l">→</span><select id="rf-a" aria-label="À">${hourSelOpts("07:00")}</select></div>
+      <label for="rf-note">Note (facultatif)<input type="text" id="rf-note" autocomplete="off" placeholder="Garde de nuit, manifestation…"></label>
+      <div class="actions"><button type="button" class="btn primary" data-act="rf-ok">Enregistrer</button><button type="button" class="btn ghost" data-act="rf-cancel">Annuler</button></div>
+    </div></div>` : `<div class="addrow"><button type="button" class="btn small" data-act="rf-open"${ro}>Noter un renfort</button></div>`;
+  const rfSec = `<section class="sec"><h2>Renforts · ${fmtNum(renfH)} h</h2>
+    ${parEq.length ? `<div class="chips rf-tot tnum">${parEq.map(([k, h]) => `<span class="pill ${h ? "p-oui" : "p-non"}">Équipe ${k} : ${fmtNum(h)} h</span>`).join("")}</div>` : ""}
+    <div class="panel list">${rfList || `<div class="item"><span class="muted">Quand tu vas dans une autre équipe sans remplacer personne. Tes astreintes « sans remplacer personne » s'ajoutent ici toutes seules.</span></div>`}${rfForm}</div></section>`;
+  return head + entraideChips() + (mode === "renfort" ? rfSec : mode === "echange" ? exSec : bilan + rdSec);
 }
 function restoreBlock(){
   return `<label for="bk-file">Restaurer depuis un fichier<input type="file" id="bk-file"></label>
@@ -1999,16 +2090,25 @@ function createWeek(day){
 }
 
 const VIEWS = [
-  { id: "garde", label: "Garde", icon: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>' },
-  { id: "messages", label: "Messages", icon: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>' },
-  { id: "reponses", label: "Réponses", icon: '<path d="M4 13l3-8h10l3 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5"/>' },
-  { id: "entraide", label: "Entraide", icon: '<path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/>' },
-  { id: "dispos", label: "Dispos", icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
-  { id: "bilan", label: "Bilan", icon: '<path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/>' },
-  { id: "reglages", label: "Réglages", icon: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
+  { id: "garde", label: "Ma garde", titre: "Ma garde", icon: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>' },
+  { id: "demandes", label: "Demandes", titre: "Demandes", icon: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>' },
+  { id: "equipes", label: "Équipes", titre: "Autres équipes", icon: '<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19.5c.6-3.2 2.8-5.2 5.5-5.2s4.9 2 5.5 5.2"/><circle cx="17" cy="9.5" r="2.4"/><path d="M15.8 14.4c2.5.2 4.1 2 4.6 4.6"/>' },
+  { id: "planning", label: "Planning", titre: "Mon planning", icon: '<rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5.5h6v2M3.5 12.5h17"/>' },
+  { id: "entraide", label: "Entraide", titre: "Entraide", icon: '<path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/>' },
+  { id: "reglages", label: "Réglages", titre: "Réglages", icon: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>' }
 ];
+// Anciens noms d'onglets (versions précédentes) → nouveaux
+function normView(){
+  const v = S.ui.view || "garde";
+  if(v === "messages" || v === "reponses") S.ui.view = "demandes";
+  else if(v === "bilan"){ S.ui.view = "equipes"; S.ui.eqMode = "bilan"; }
+  else if(v === "dispos") S.ui.view = S.ui.dispoMode === "autres" ? "equipes" : S.ui.dispoMode === "travail" ? "planning" : "garde";
+  else if(v === "garde" && S.ui.gardeMode === "autres"){ S.ui.view = "equipes"; S.ui.gardeMode = "moi"; }
+  if(!VIEWS.some(x => x.id === S.ui.view)) S.ui.view = "garde";
+  return S.ui.view;
+}
 function goTab(view, anchor, block){
-  S.ui.view = view; render();
+  S.ui.view = view; normView(); render();
   requestAnimationFrame(() => {
     const el = anchor && document.getElementById(anchor);
     if(el) el.scrollIntoView({ behavior: "auto", block: block || "start" }); else window.scrollTo(0, 0);
@@ -2021,11 +2121,8 @@ function renderTabbar(show, week, m, reg){
   const cur = S.ui.view || "garde";
   const badge = {};
   if(m && m.libres.length) badge.garde = m.libres.length;
-  const rl = week ? aRelancer(week).length : 0; if(rl) badge.reponses = rl;
-  if(week && m && parseLocal(week.fin) >= parseLocal(nowLocal())){
-    const sa = week.saisies || [], n = dispoRanges(m).filter(r => !sa.includes(r.sig)).length;
-    if(n) badge.dispos = n;
-  }
+  const rl = week ? aRelancer(week).length : 0; if(rl) badge.demandes = rl;
+  const aPreciser = astreintesListe(reg || {}).filter(a => a.remplace === undefined || a.remplace === null).length; if(aPreciser) badge.equipes = aPreciser;
   const dot = { reglages: !!backupDue(reg) };
   bar.innerHTML = `<div class="tabbar-in">${VIEWS.map(v => `<button type="button" class="tb${cur === v.id ? " on" : ""}" data-view="${v.id}"${cur === v.id ? ' aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true">${v.icon}</svg><span>${v.label}</span>${badge[v.id] ? `<span class="tb-badge">${badge[v.id]}</span>` : dot[v.id] ? `<span class="tb-dot"></span>` : ""}</button>`).join("")}</div>`;
 }
@@ -2071,7 +2168,7 @@ function render(){
   let html = (S.notice ? `<div class="notice">${esc(S.notice)}</div>` : "");
   if(S.ui.newWeek) html += newWeekView();
   if(!week){
-    renderTabbar(false); setBodyView("");
+    renderTabbar(false); setBodyView(""); { const h1 = $("h1"); if(h1) h1.textContent = "Remplacements de garde"; }
     html = installCard() + html;
     if(!S.ui.newWeek){
       const vide = !S.weeks.length && !S.reg;
@@ -2090,21 +2187,18 @@ function render(){
     html += `<div class="notice"><b>Période invalide.</b> La fin doit être après le début (31 jours maximum). Corrige-la ci-dessous.</div>` + settingsView(week, reg);
     renderTabbar(false); app.innerHTML = html; bindAfter(); return;
   }
-  const view = S.ui.view || "garde";
-  setBodyView("has-tabs view-" + view + (view === "garde" && S.ui.gardeMode === "autres" ? " garde-autres" : ""));
+  const view = normView();
+  setBodyView("has-tabs view-" + view);
+  { const h1 = $("h1"), vv = VIEWS.find(x => x.id === view); if(h1 && vv) h1.textContent = vv.titre; }
   renderTabbar(true, week, m, reg);
-  if(view === "garde"){
-    html += installCard() + backupBanner(reg) + nowCard(week, reg) + gardeModeChips(reg);
-    html += (S.ui.gardeMode || "moi") === "autres" ? autresGardeView(reg) : summaryView(m, week) + boardView(m, reg) + gapsView(m, week);
-  }
+  if(view === "garde") html += installCard() + backupBanner(reg) + nowCard(week, reg) + summaryView(m, week) + boardView(m, reg) + gapsView(m, week) + consoleView(week, m) + ajView(week, m);
+  else if(view === "demandes") html += rpView(week, m, reg) + messagesView(m, week, reg) + suiviView(week);
+  else if(view === "equipes") html += equipesView(reg);
+  else if(view === "planning") html += travailView(reg);
   else if(view === "entraide") html += entraideView(reg);
-  else if(view === "bilan") html += bilanView(reg);
-  else if(view === "messages") html += messagesView(m, week, reg);
-  else if(view === "reponses") html += rpView(week, m, reg) + suiviView(week);
-  else if(view === "dispos"){ const dm = S.ui.dispoMode || "moi"; html += dispoModeChips() + (dm === "autres" ? autresView(reg) : dm === "travail" ? travailView(reg) : ajView(week, m) + consoleView(week, m)); }
   else {
     S.ui.settingsOpen = true;
-    html += `<h2 class="view-title">Réglages</h2>` + backupBanner(reg) + settingsView(week, reg) + aideView()
+    html += backupBanner(reg) + settingsView(week, reg) + aideView()
       + `<p class="tip">Cette appli marche sans Internet : tout reste sur ce téléphone. Pour que Claude mette à jour ton planning, envoie-lui une sauvegarde (Réglages › Sauvegarde). Version du ${esc(APP_VERSION)}.</p>`;
   }
   app.innerHTML = html;
@@ -2226,7 +2320,7 @@ $("#app").addEventListener("click", e => {
     }
     case "rp-stop": if(rpCtl) rpCtl.abort(); break;
     case "rp-cancel": S.ui.rp = null; render(); break;
-    case "rp-reset": S.ui.rpDone = null; render(); { const i = $("#rp-nom"); if(i) i.focus(); } break;
+    case "rp-reset": S.ui.rpDone = null; render(); break;
     case "rp-statut": if(S.ui.rp){ S.ui.rp.statut = b.dataset.v; render(); } break;
     case "rp-ok": {
       const r = S.ui.rp; if(!r) return;
@@ -2277,18 +2371,18 @@ $("#app").addEventListener("click", e => {
       S.ui.part = null; S.ui.rp = null; S.ui.tab = "relance"; S.ui.dest = "";
       S.ui.rpDone = { nom: r0.nom, statut: encore ? "oui" : "non", titre: `${prenom(r0.nom)} ne fait plus ${fmtSlot(libere)} : ce créneau est de nouveau à couvrir.`, chef: m2 ? chefRetraitMsg(week, m2, reg, r0.nom, libere) : "" };
       render(); toast("Partie retirée du planning");
-      goTab("reponses", "rp-sec");
+      goTab("demandes", "rp-sec");
       break;
     }
     case "rp-relance": {
       S.ui.tab = "relance"; S.ui.dest = ""; render();
-      goTab("messages", "msg-sec");
+      goTab("demandes", "msg-sec");
       break;
     }
     case "rp-merci": {
       const d = S.ui.rpDone; if(!d) return;
       S.ui.tab = "merci"; S.ui.dest = d.nom; render();
-      goTab("messages", "msg-sec");
+      goTab("demandes", "msg-sec");
       break;
     }
     case "su-garde": S.ui.su.garde = b.dataset.v; render(); break;
@@ -2427,10 +2521,10 @@ $("#app").addEventListener("click", e => {
       goTab("reglages", "aide-" + b.dataset.v);
       break;
     }
-    case "goto-rep": goTab("reponses", "rep-sec"); break;
+    case "goto-rep": goTab("demandes", "rep-sec"); break;
     case "relancer": {
       S.ui.tab = "relance"; S.ui.dest = b.dataset.v; render();
-      goTab("messages", "msg-sec");
+      goTab("demandes", "msg-sec");
       toast(`Copie la relance pour ${prenom(b.dataset.v)}`);
       break;
     }
@@ -2519,7 +2613,58 @@ $("#app").addEventListener("click", e => {
       else { const ind = clone(reg.indispos || {}); for(const k of Object.keys(ind)){ ind[k] = ind[k].filter(x => (x.g || x.id) !== gk); if(!ind[k].length) delete ind[k]; } saveReg({ indispos: ind }); }
       render(); toast("Indispo supprimée"); break;
     }
-    case "garde-mode": S.ui.gardeMode = b.dataset.v; render(); window.scrollTo(0, 0); break;
+    case "eq-mode": S.ui.eqMode = b.dataset.v; render(); window.scrollTo(0, 0); break;
+    case "ent-mode": S.ui.entMode = b.dataset.v; render(); break;
+    case "rf-open": S.ui.rfOpen = true; render(); break;
+    case "rf-cancel": S.ui.rfOpen = false; render(); break;
+    case "rf-ok": {
+      const eq = ($("#rf-eq") || {}).value, day = ($("#rf-day") || {}).value, de = $("#rf-de").value, a = $("#rf-a").value;
+      if(!eq){ toast("Choisis l'équipe"); return; }
+      if(!day){ toast("Indique le jour"); return; }
+      const debut = `${day}T${de}`, fin = hm(a) > hm(de) ? `${day}T${a}` : `${dayStr(dayNum(day) + 1)}T${a}`;
+      saveReg({ renforts: [...clone(reg.renforts || []), { id: uid("f"), eq, debut, fin, note: ($("#rf-note").value || "").trim() }] });
+      S.ui.rfOpen = false; render(); toast(`Renfort noté : ${fmtDur(hCeil(fin) - hFloor(debut))} équipe ${eq}`);
+      break;
+    }
+    case "rf-rm": saveReg({ renforts: (reg.renforts || []).filter(r => r.id !== b.dataset.id) }); render(); toast("Supprimé"); break;
+    case "ast-ask": S.ui.astAsk = { d: b.dataset.d, sig: b.dataset.sig, eq: b.dataset.eq, step: "q" }; render(); break;
+    case "ast-fermer": S.ui.astAsk = null; render(); break;
+    case "ast-oui": if(S.ui.astAsk){ S.ui.astAsk.step = "oui"; S.ui.astAsk.nouveau = !tousLesNoms(reg).length; render(); } break;
+    case "ast-retour": if(S.ui.astAsk){ S.ui.astAsk.step = "q"; render(); } break;
+    case "ast-nouveau": if(S.ui.astAsk){ S.ui.astAsk.nouveau = true; render(); const i = $("#ast-nom"); if(i) i.focus(); } break;
+    case "ast-liste": if(S.ui.astAsk){ S.ui.astAsk.nouveau = false; render(); } break;
+    case "ast-non": case "ast-valider": {
+      const q = S.ui.astAsk; if(!q) return;
+      let nom = "";
+      if(act === "ast-valider"){
+        nom = String(q.nouveau ? ($("#ast-nom") || {}).value || "" : ($("#ast-qui") || {}).value || "").trim();
+        if(!nom){ toast(q.nouveau ? "Écris le nom de la personne" : "Choisis la personne"); return; }
+        if(q.nouveau) ensureContact(nom);
+      }
+      const r = plageDe(reg, q.d, q.sig), all = clone(reg.astreintes || {});
+      all[q.d] = (all[q.d] || []).map(a => astDansPlage(a, r) ? { ...a, remplace: nom } : a);
+      saveReg({ astreintes: all }); S.ui.astAsk = null; render();
+      toast(nom ? `Noté : tu remplaces ${prenom(nom)}` : "Noté : astreinte sans remplacer personne (renfort)");
+      break;
+    }
+    case "ast-edit": S.ui.astEdit = { d: b.dataset.d, sig: b.dataset.sig }; render(); break;
+    case "ast-close": S.ui.astEdit = null; render(); break;
+    case "ast-set": case "ast-add": {
+      const d = b.dataset.d, r = plageDe(reg, d, b.dataset.sig), s0 = Number($("#ae-s").value), e0 = Number($("#ae-e").value);
+      if(!(e0 > s0)){ toast("L'heure de fin doit être après le début"); return; }
+      const cur = astreintesOf(reg, d).filter(a => astDansPlage(a, r)), rem = cur.length ? cur[0].remplace : undefined;
+      const slots = (act === "ast-add" ? cur.map(a => slotOf(a)) : []).concat([{ s: s0, e: e0 }]);
+      saveReg({ astreintes: setAstPlage(reg, d, r, slots, b.dataset.eq, rem) });
+      if(act === "ast-set") S.ui.astEdit = null;
+      render(); toast(act === "ast-set" ? `Astreinte : ${rangeTxt({ s: s0, e: e0 })}` : "Créneau ajouté");
+      break;
+    }
+    case "ast-rm": {
+      const all = clone(reg.astreintes || {}), d = b.dataset.d;
+      all[d] = (all[d] || []).filter(a => a.id !== b.dataset.id); if(!all[d].length) delete all[d];
+      saveReg({ astreintes: all }); render(); toast("Heures retirées");
+      break;
+    }
     case "bilan-per": S.ui.bilanPer = b.dataset.v; render(); break;
     case "bilan-copy": { const st = bilanStats(reg); if(st) copyText(bilanTexte(reg, st), "Bilan copié"); break; }
     case "bm-open": S.ui.bmOpen = true; render(); break;
@@ -2536,47 +2681,8 @@ $("#app").addEventListener("click", e => {
       break;
     }
     case "bm-rm": { const all = clone(reg.bilanManuel || {}); delete all[b.dataset.d]; saveReg({ bilanManuel: all }); render(); toast("Garde retirée du bilan"); break; }
-    case "ag-seg": {
-      const s0 = Number(b.dataset.s), e0 = Number(b.dataset.e);
-      const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === (S.ui.autreSel || "")) || (autresGardesDispo(reg, AUTRES_N) || [])[0]; if(!o) return;
-      if(b.dataset.k === "ast"){ const el = $("#ag-ast"); if(el) el.scrollIntoView({ behavior: "auto", block: "start" }); return; }
-      const r = dispoRanges(o.m).find(x => x.s <= s0 && x.e >= e0);
-      S.ui.agForm = { d: o.d, s: r ? r.s : s0, e: r ? r.e : e0 }; render();
-      requestAnimationFrame(() => { const el = $("#ag-ast"); if(el) el.scrollIntoView({ behavior: "auto", block: "start" }); });
-      break;
-    }
-    case "ag-new": { const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === b.dataset.d); if(!o) return; S.ui.agForm = { d: o.d, s: o.m.g0, e: o.m.g0 + 12 * CPH }; render(); break; }
-    case "ag-cancel": S.ui.agForm = null; render(); break;
-    case "ag-ok": {
-      const d = b.dataset.d, s0 = Number($("#ag-s").value), e0 = Number($("#ag-e").value);
-      if(!(e0 > s0)){ toast("L'heure de fin doit être après le début"); return; }
-      saveReg({ astreintes: addAstreintes(reg, d, b.dataset.eq, [{ s: s0, e: e0 }], ($("#ag-note").value || "").trim()) }); S.ui.agForm = null; render(); toast(`Astreinte notée : ${rangeTxt({ s: s0, e: e0 })}`);
-      break;
-    }
     case "ag-rm": { const all = clone(reg.astreintes || {}); all[b.dataset.d] = (all[b.dataset.d] || []).filter(a => a.id !== b.dataset.id); if(!all[b.dataset.d].length) delete all[b.dataset.d]; saveReg({ astreintes: all }); render(); toast("Astreinte retirée"); break; }
-    case "agrp-go": {
-      const txt = (S.ui.agRpTxt || "").trim(); if(!txt){ toast("Colle d'abord le message du chef"); return; }
-      const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === b.dataset.d); if(!o) return;
-      const st = etatAutre(o, reg);
-      const base = st.misR.length ? st.misR : dispoRanges(o.m).map(r => ({ s: r.s, e: r.e }));
-      const mFake = { g0: o.m.g0, g1: o.m.g1, restants: base.slice().sort((x, y) => x.s - y.s) };
-      const r = interpret(parseReply(txt, mFake), mFake, "chef", txt);
-      S.ui.agRp = { d: o.d, txt, statut: r.statut, pieces: r.pieces, doute: r.doute };
-      render(); break;
-    }
-    case "agrp-cancel": S.ui.agRp = null; render(); break;
-    case "agrp-ok": {
-      const rp = S.ui.agRp; if(!rp) return;
-      const chosen = rp.pieces.filter(x => x.on); if(!chosen.length){ toast("Coche au moins un créneau"); return; }
-      saveReg({ astreintes: addAstreintes(reg, rp.d, b.dataset.eq, chosen, "") }); S.ui.agRp = null; S.ui.agRpTxt = ""; render(); toast(`${chosen.length} astreinte${chosen.length > 1 ? "s" : ""} notée${chosen.length > 1 ? "s" : ""}`);
-      break;
-    }
     case "ag-copy": { const ta = $("#ag-msg"); if(ta) copyText(ta.value, "Message copié"); break; }
-    case "ag-dispos": {
-      const list = autresGardesDispo(reg, AUTRES_N) || [], cur = (list.find(x => x.d === S.ui.autreSel) || list[0] || {}).d;
-      const acc = { ...(S.ui.acc || {}) }; for(const x of list) acc["autre-" + x.d] = x.d === cur;
-      S.ui.acc = acc; S.ui.dispoMode = "autres"; goTab("dispos", "autre-" + cur, "start"); break;
-    }
     case "perso-open": S.ui.persoOpen = { d: b.dataset.d, sig: b.dataset.sig }; S.ui.ppS = null; S.ui.ppE = null; render(); break;
     case "perso-close": S.ui.persoOpen = null; render(); break;
     case "perso-add": {
@@ -2644,7 +2750,7 @@ $("#app").addEventListener("click", e => {
       const m2 = compute({ ...week, remplacements: rempl }, reg);
       S.ui.rp = null; S.ui.rpDone = { nom: r0.nom, statut: "oui", chef: m2 ? chefMsg(week, m2, reg, r0.nom, [slotOf(r0)]) : "" };
       render(); toast(`${prenom(r0.nom)} confirmé`);
-      goTab("reponses", "rp-sec");
+      goTab("demandes", "rp-sec");
       break;
     }
     case "prov-rm": saveWeek(week.id, { remplacements: (week.remplacements || []).filter(r => r.id !== b.dataset.id) }); toast("Retiré du planning"); break;
@@ -2704,6 +2810,27 @@ $("#app").addEventListener("change", e => {
     if(box && info && r0) info.textContent = partInfo(r0.nom, { s: Number(box.dataset.rs), e: Number(box.dataset.re) }, Number($("#pt-s").value), Number($("#pt-e").value));
     return;
   }
+  if(t.dataset.astAutre !== undefined){
+    const reg = currentReg(), d = t.dataset.astAutre, sig = t.dataset.sig, eq = t.dataset.eq, r = plageDe(reg, d, sig);
+    if(t.checked){
+      const perso = ((((reg.persoAutres || {})[d]) || {})[sig]) || [];
+      const slots = perso.length ? perso : [{ s: r.s, e: r.e }];
+      const patch = { astreintes: setAstPlage(reg, d, r, slots, eq, undefined) };
+      // mis d'astreinte = forcément saisi dans NexSIS
+      if(perso.length){ const pn = clone(reg.persoNotesAutres || {}); pn[d] = pn[d] || {}; pn[d][sig] = persoEmpreinte(perso); patch.persoNotesAutres = pn; }
+      else { const sa = clone(reg.saisiesAutres || {}); sa[d] = saveRangeSaisie(sa[d], sig, true); patch.saisiesAutres = sa; }
+      const nm = clone(reg.nonMisAutres || {}); if(nm[d]) nm[d] = nm[d].filter(k => k !== sig); patch.nonMisAutres = nm;
+      saveReg(patch); S.ui.astAsk = { d, sig, eq, step: "q" }; S.ui.astEdit = null;
+    } else {
+      saveReg({ astreintes: setAstPlage(reg, d, r, [], eq) }); S.ui.astAsk = null; S.ui.astEdit = null; toast("Astreinte retirée");
+    }
+    render(); return;
+  }
+  // Décocher « Saisi » ou cocher « Pas mis » retire aussi l'astreinte de la plage
+  if((t.dataset.persoSaisi !== undefined || t.dataset.saisiAutre !== undefined) && !t.checked || t.dataset.pasmisAutre !== undefined && t.checked){
+    const reg = currentReg(), d = t.dataset.persoSaisi || t.dataset.saisiAutre || t.dataset.pasmisAutre, r = plageDe(reg, d, t.dataset.sig);
+    if(astreintesOf(reg, d).some(a => astDansPlage(a, r))){ saveReg({ astreintes: setAstPlage(reg, d, r, [], "") }); toast("Astreinte retirée aussi"); }
+  }
   if(t.dataset.persoSaisi !== undefined){
     const d = t.dataset.persoSaisi, sig = t.dataset.sig, reg = currentReg();
     const slots = (((reg.persoAutres || {})[d]) || {})[sig] || [];
@@ -2736,7 +2863,6 @@ $("#app").addEventListener("change", e => {
     saveWeek(week.id, { saisies: saveRangeSaisie(week.saisies, t.dataset.saisi, t.checked) });
     return;
   }
-  if(t.dataset.rpp !== undefined && S.ui.rp){ const p = S.ui.rp.pieces[Number(t.dataset.rpp)]; if(p) p.on = t.checked; return; }
   if(t.id === "aj-all"){ $("#aj-de").disabled = $("#aj-a").disabled = t.checked; return; }
   if(t.dataset.wf && week){
     const f = t.dataset.wf;
@@ -2753,8 +2879,7 @@ $("#app").addEventListener("change", e => {
     const c = clone(currentReg().cycle), L = Math.min(70, Math.max(1, Math.round(Number(t.value) || 7)));
     c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
   }
-  if(t.id === "ag-sel"){ S.ui.autreSel = t.value; S.ui.agForm = null; S.ui.agRp = null; render(); return; }
-  if(t.dataset.agp !== undefined && S.ui.agRp){ const x = S.ui.agRp.pieces[Number(t.dataset.agp)]; if(x) x.on = t.checked; return; }
+  if(t.id === "ag-sel"){ S.ui.autreSel = t.value; S.ui.astEdit = null; S.ui.astAsk = null; render(); return; }
   if(t.id === "pp-s" || t.id === "pp-e"){ S.ui[t.id === "pp-s" ? "ppS" : "ppE"] = Number(t.value); return; }
   if(t.id === "ex-multi"){ S.ui.exMulti = t.checked; render(); return; }
   if(t.id === "in-multi"){ S.ui.inMulti = t.checked; render(); return; }
@@ -2820,7 +2945,6 @@ $("#app").addEventListener("change", e => {
 $("#app").addEventListener("input", e => {
   const t = e.target;
   if(t.id === "su-nom"){ if(S.ui.su) S.ui.su.nom = t.value; return; }
-  if(t.id === "agrp-txt"){ S.ui.agRpTxt = t.value; return; }
   if(t.id === "ex-note"){ S.ui.exNote = t.value; return; }
   if(t.id === "in-note"){ S.ui.inNote = t.value; return; }
   if(t.id === "rp-txt") S.ui.rpTxt = t.value;
