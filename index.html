@@ -149,6 +149,10 @@ details.sec-acc > .panel{margin-top:6px}
 .sh-btns{display:flex;gap:10px;flex-wrap:wrap}
 .sh-btns .btn{flex:1 1 0;padding:13px 14px;font-size:16px}
 .sheet select{width:100%}
+.sh-col{display:flex;flex-direction:column;gap:10px}
+.sh-col .btn{width:100%;padding:12px 14px;font-size:15.5px;white-space:normal;line-height:1.25;text-align:center}
+.sh-adj{font-weight:600}
+.sh-cur{margin:-4px 0 0;font-weight:600;color:var(--cover)}
 .view-bilan .weekbar{display:none}
 .bl-chart{display:flex;flex-direction:column;gap:16px}
 .bl-eq{display:flex;flex-direction:column;gap:6px}
@@ -411,7 +415,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "17 nov. 2026 (n°27)";
+const APP_VERSION = "17 nov. 2026 (n°28)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -1694,12 +1698,14 @@ function autreBoard(o, reg, st){
     const segHtml = segs.map(sg => {
       const w = (sg.n / CPD * 100).toFixed(4), txt = sg.n >= 3 * CPH && sg.lbl ? `<i>${esc(sg.lbl)}</i>` : "";
       const title = `${fmtSlot({ s: sg.h, e: sg.h + sg.n })}${sg.lbl ? " · " + sg.lbl : ""}`;
+      if(sg.k === "mis" || sg.k === "libre" || sg.k === "ast") return `<button type="button" class="seg a-${sg.k}" style="width:${w}%" data-act="eq-seg" data-d="${o.d}" data-eq="${o.eq}" data-h="${sg.h}" title="${esc(title)}" aria-label="${esc(title + (sg.k === "ast" ? " · modifier l'astreinte" : " · noter une astreinte"))}">${txt}</button>`;
       return `<span class="seg a-${sg.k}" style="width:${w}%" title="${esc(title)}">${txt}</span>`;
     }).join("");
     rows += `<div class="row"><div class="rlab"><span class="rday${fer ? " rfer" : ""}">${JOURS[date.getUTCDay()].replace(".", "")}</span><span class="rnum tnum">${date.getUTCDate()}</span>${code ? `<span class="rcode" title="${esc(POSTE[code] || code)}">${esc(code)}</span>` : ""}</div><div class="bar">${segHtml}</div></div>`;
   }
   return `<div class="panel board">${rows}
-    <div class="legend"><span><b class="a-ast"></b>Astreinte</span><span><b class="a-mis"></b>Mis dispo</span><span><b class="a-libre"></b>Libre</span><span><b class="a-pas"></b>Pas mis</span><span><b class="a-busy"></b>Travail / indispo</span></div></div>`;
+    <div class="legend"><span><b class="a-ast"></b>Astreinte</span><span><b class="a-mis"></b>Mis dispo</span><span><b class="a-libre"></b>Libre</span><span><b class="a-pas"></b>Pas mis</span><span><b class="a-busy"></b>Travail / indispo</span></div>
+    <p class="item-sub" style="margin:0">Touche un créneau où tu es dispo pour noter une astreinte.</p></div>`;
 }
 function equipesView(reg){
   if((S.ui.eqMode || "gardes") === "bilan") return equipesChips() + bilanView(reg);
@@ -1731,7 +1737,7 @@ function equipesView(reg){
   const msgSec = `<details class="acc sec-acc" data-acc="msg-chef"${accOpen("msg-chef")}><summary>Message au chef de garde</summary>
     <div class="panel msgbox"><textarea id="ag-msg" aria-label="Message au chef de garde">${esc(msg)}</textarea>
     <div class="actions"><button type="button" class="btn primary" data-act="ag-copy">Copier le message</button></div></div></details>`;
-  return equipesChips() + `<div class="ag-sel">${sel}</div>` + resume + `<section class="sec"><h2>Tableau · équipe ${o.eq}</h2>${autreBoard(o, reg, st)}</section>` + liste + msgSec + astSheet(reg, list);
+  return equipesChips() + `<div class="ag-sel">${sel}</div>` + resume + `<section class="sec"><h2>Tableau · équipe ${o.eq}</h2>${autreBoard(o, reg, st)}</section>` + liste + msgSec + astSheet(reg, list) + segSheet(reg, list);
 }
 function remplaceTxt(a){ return a.remplace === undefined || a.remplace === null ? "Remplacement à préciser" : a.remplace ? `Tu remplaces ${a.remplace}` : "Sans remplacer personne"; }
 // Bloc « Mis d'astreinte » d'une plage (dans la liste des dispos)
@@ -1794,6 +1800,64 @@ function astSheet(reg, list){
       <p class="sh-sub tnum">${esc(quand)}</p>
       ${body}
     </div>`;
+}
+// Fenêtre ouverte en touchant un créneau du tableau
+function segSheet(reg, list){
+  const q = S.ui.seg; if(!q) return "";
+  const o = (list || []).find(x => x.d === q.d); if(!o){ S.ui.seg = null; return ""; }
+  const edit = !!q.id, sub = `${rangeTxt({ s: q.s, e: q.e })} · ${fmtDur(q.e - q.s)}`;
+  let body;
+  if(q.step === "qui"){
+    const noms = tousLesNoms(reg);
+    body = `<p class="sh-q">Qui remplaces-tu ?</p>
+      ${q.nouveau || !noms.length ? `<label for="seg-nom">Nom de la personne<input type="text" id="seg-nom" autocomplete="off" placeholder="Prénom Nom"></label>
+        ${noms.length ? `<button type="button" class="lnk" data-act="seg-liste">Choisir dans la liste</button>` : ""}`
+      : `<label for="seg-qui" class="sr-lab">Personne<select id="seg-qui"><option value="">Choisir…</option>${noms.map(n => `<option${q.rem && same(q.rem, n) ? " selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+        <button type="button" class="lnk" data-act="seg-nouveau">+ Ajouter une personne</button>`}
+      <div class="sh-btns"><button type="button" class="btn primary" data-act="seg-valider">Valider</button><button type="button" class="btn ghost" data-act="seg-retour">Retour</button></div>`;
+  } else {
+    body = `${edit ? `<p class="sh-cur">${esc(remplaceTxt({ remplace: q.rem }))}</p>` : ""}
+      <label class="chk sh-adj" for="seg-adj"><input type="checkbox" id="seg-adj"${q.adj ? " checked" : ""}> Ajuster les heures</label>
+      ${q.adj ? `<div class="hours"><label for="seg-s">De<select id="seg-s">${hourOptions(q.bs, q.be - 1, q.s)}</select></label><label for="seg-e">À<select id="seg-e">${hourOptions(q.bs + 1, q.be, q.e)}</select></label></div>` : ""}
+      <div class="sh-col">
+        <button type="button" class="btn primary sh-big" data-act="seg-non">Mis d'astreinte · sans remplacer personne</button>
+        <button type="button" class="btn sh-big" data-act="seg-oui">Mis d'astreinte · je remplace quelqu'un</button>
+        ${edit ? `<button type="button" class="btn ghost danger" data-act="seg-rm">Retirer l'astreinte</button>` : ""}
+      </div>`;
+  }
+  return `<div class="sheet-bg" data-act="seg-fermer"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="seg-t">
+      <div class="sh-head"><b id="seg-t">${edit ? "Astreinte" : "Mis d'astreinte ?"} · équipe ${esc(o.eq)}</b><button type="button" class="chip x" data-act="seg-fermer" aria-label="Fermer">×</button></div>
+      <p class="sh-sub tnum">${esc(sub)}</p>
+      ${body}
+    </div>`;
+}
+// Mis d'astreinte = forcément saisi dans NexSIS
+function marquerSaisi(reg, d, sig){
+  if(!sig) return {};
+  const patch = {}, perso = ((((reg.persoAutres || {})[d]) || {})[sig]) || [];
+  if(perso.length){ const pn = clone(reg.persoNotesAutres || {}); pn[d] = pn[d] || {}; pn[d][sig] = persoEmpreinte(perso); patch.persoNotesAutres = pn; }
+  else { const sa = clone(reg.saisiesAutres || {}); sa[d] = saveRangeSaisie(sa[d], sig, true); patch.saisiesAutres = sa; }
+  const nm = clone(reg.nonMisAutres || {}); if(nm[d]) nm[d] = nm[d].filter(k => k !== sig); patch.nonMisAutres = nm;
+  return patch;
+}
+function segSave(remplace){
+  const q = S.ui.seg, reg = currentReg(); if(!q) return;
+  if(!(q.e > q.s)){ toast("L'heure de fin doit être après le début"); return; }
+  const all = clone(reg.astreintes || {}), today = dayNum(nowLocal());
+  for(const k of Object.keys(all)) if(dayNum(k) < today - GARDE_HISTO) delete all[k];
+  let s0 = q.s, e0 = q.e;
+  const keep = [];
+  for(const a of (all[q.d] || [])){
+    if(a.id === q.id) continue;
+    const sl = slotOf(a);
+    if(sl.s <= e0 && sl.e >= s0){ s0 = Math.min(s0, sl.s); e0 = Math.max(e0, sl.e); } else keep.push(a);
+  }
+  keep.push({ id: uid("a"), eq: q.eq, sig: q.sig, debut: isoFromHour(s0), fin: isoFromHour(e0), note: "", remplace });
+  all[q.d] = keep;
+  saveReg({ astreintes: all, ...marquerSaisi(reg, q.d, q.sig) });
+  S.ui.seg = null; render();
+  toast(remplace ? `Astreinte notée : tu remplaces ${prenom(remplace)}` : `Astreinte notée : ${rangeTxt({ s: s0, e: e0 })}`);
 }
 // Écrit les astreintes d'une plage (remplace celles qui la chevauchent)
 function setAstPlage(reg, d, r, slots, eq, remplace){
@@ -2645,6 +2709,40 @@ $("#app").addEventListener("click", e => {
       render(); toast("Indispo supprimée"); break;
     }
     case "eq-mode": S.ui.eqMode = b.dataset.v; render(); window.scrollTo(0, 0); break;
+    case "eq-seg": {
+      const d = b.dataset.d, h = Number(b.dataset.h), eq = b.dataset.eq;
+      const o = (autresGardesDispo(reg, AUTRES_N) || []).find(x => x.d === d); if(!o) return;
+      const rs = dispoRanges(o.m), r = rs.find(x => h >= x.s && h < x.e);
+      const ast = astreintesOf(reg, d).find(a => { const sl = slotOf(a); return h >= sl.s && h < sl.e; });
+      S.ui.astAsk = null; S.ui.astEdit = null;
+      if(ast){
+        const sl = slotOf(ast), rr = r || rs.find(x => astDansPlage(ast, x));
+        S.ui.seg = { d, eq, sig: rr ? rr.sig : "", bs: rr ? Math.min(rr.s, sl.s) : sl.s, be: rr ? Math.max(rr.e, sl.e) : sl.e, s: sl.s, e: sl.e, id: ast.id, rem: ast.remplace, step: "choix", adj: false };
+      } else if(r){
+        // tout le créneau où tu t'es mis dispo (tes horaires perso s'il y en a)
+        const ps = (((((reg.persoAutres || {})[d]) || {})[r.sig]) || []).find(x => h >= x.s && h < x.e);
+        S.ui.seg = { d, eq, sig: r.sig, bs: r.s, be: r.e, s: ps ? ps.s : r.s, e: ps ? ps.e : r.e, id: null, step: "choix", adj: false };
+      } else return;
+      render(); break;
+    }
+    case "seg-fermer": S.ui.seg = null; render(); break;
+    case "seg-non": segSave(""); break;
+    case "seg-oui": if(S.ui.seg){ S.ui.seg.step = "qui"; S.ui.seg.nouveau = false; render(); } break;
+    case "seg-retour": if(S.ui.seg){ S.ui.seg.step = "choix"; render(); } break;
+    case "seg-nouveau": if(S.ui.seg){ S.ui.seg.nouveau = true; render(); const i = $("#seg-nom"); if(i) i.focus(); } break;
+    case "seg-liste": if(S.ui.seg){ S.ui.seg.nouveau = false; render(); } break;
+    case "seg-valider": {
+      const q = S.ui.seg; if(!q) return;
+      const champ = $("#seg-nom") || $("#seg-qui"), nom = String((champ || {}).value || "").trim();
+      if(!nom){ toast(champ && champ.id === "seg-nom" ? "Écris le nom de la personne" : "Choisis la personne"); return; }
+      if(champ.id === "seg-nom") ensureContact(nom);
+      segSave(nom); break;
+    }
+    case "seg-rm": {
+      const q = S.ui.seg; if(!q || !q.id) return;
+      const all = clone(reg.astreintes || {}); all[q.d] = (all[q.d] || []).filter(a => a.id !== q.id); if(!all[q.d].length) delete all[q.d];
+      saveReg({ astreintes: all }); S.ui.seg = null; render(); toast("Astreinte retirée"); break;
+    }
     case "ent-mode": S.ui.entMode = b.dataset.v; render(); break;
     case "rf-open": S.ui.rfOpen = true; render(); break;
     case "rf-cancel": S.ui.rfOpen = false; render(); break;
@@ -2910,7 +3008,13 @@ $("#app").addEventListener("change", e => {
     const c = clone(currentReg().cycle), L = Math.min(70, Math.max(1, Math.round(Number(t.value) || 7)));
     c.motif = ((c.motif || "") + "R".repeat(70)).slice(0, L); saveReg({ cycle: c }); render(); return;
   }
-  if(t.id === "ag-sel"){ S.ui.autreSel = t.value; S.ui.astEdit = null; S.ui.astAsk = null; render(); return; }
+  if(t.id === "ag-sel"){ S.ui.autreSel = t.value; S.ui.astEdit = null; S.ui.astAsk = null; S.ui.seg = null; render(); return; }
+  if(t.id === "seg-adj" && S.ui.seg){ S.ui.seg.adj = t.checked; render(); return; }
+  if((t.id === "seg-s" || t.id === "seg-e") && S.ui.seg){
+    const q = S.ui.seg, v = Number(t.value);
+    if(t.id === "seg-s"){ q.s = v; if(q.e <= v) q.e = Math.min(q.be, v + 2); } else { q.e = v; if(q.s >= v) q.s = Math.max(q.bs, v - 2); }
+    render(); return;
+  }
   if(t.id === "pp-s" || t.id === "pp-e"){ S.ui[t.id === "pp-s" ? "ppS" : "ppE"] = Number(t.value); return; }
   if(t.id === "ex-multi"){ S.ui.exMulti = t.checked; render(); return; }
   if(t.id === "in-multi"){ S.ui.inMulti = t.checked; render(); return; }
