@@ -250,6 +250,10 @@ details.panel[open] > summary::after{content:"–"}
 .hr-list{display:flex;flex-direction:column;gap:8px}
 .hr-row{display:grid;grid-template-columns:84px minmax(0,1fr) 14px minmax(0,1fr);gap:6px;align-items:center}
 .hr-l{font-size:14px;font-weight:600}
+.hr-head span{font-size:13px;font-weight:800;color:var(--ink);padding-left:2px;line-height:1.15}
+.warn-box{display:flex;flex-direction:column;gap:4px;background:var(--wait-soft);border:2px solid var(--wait, #C77D14);border-radius:12px;padding:12px 14px;font-size:14.5px;line-height:1.35;color:var(--ink)}
+.warn-box > b{font-size:16px}
+.warn-box .wb-ex{margin-top:4px;padding-top:6px;border-top:1px solid color-mix(in srgb, var(--ink) 15%, transparent)}
 .hr-n{grid-column:4;font-size:12px;color:var(--muted);margin-top:-2px;padding-left:4px}
 .set select{font-size:16px}
 .gm-l{font-size:13px;color:var(--muted)}
@@ -407,7 +411,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "16 nov. 2026 (n°25)";
+const APP_VERSION = "17 nov. 2026 (n°27)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -548,7 +552,7 @@ function compute(week, reg){
 
   const cyc = reg.cycle || {};
   {
-    const tr = Number(cyc.trajetMin) || 0;
+    const mg = margesOf(cyc);
     for(let d = Math.floor(g0 / CPD) - 1; d <= Math.floor((g1 - 1) / CPD); d++){
       const pj = posteDuJour(d, reg), code = pj.code, hor = pj.hor;
       for(const x of (pj.extras || [])){
@@ -563,7 +567,7 @@ function compute(week, reg){
       let [s, e] = hor.split("-").map(hm);
       if(e <= s) e += 1440;
       if(code === "N" && cyc.finNuitFerie && (ferie(d + 1) || [0, 6].includes(new Date((d + 1) * 86400000).getUTCDay()))) e = 1440 + hm(cyc.finNuitFerie);
-      const sm = d * 1440 + s - tr, em = d * 1440 + e + tr;
+      const sm = d * 1440 + s - mg.avant, em = d * 1440 + e + mg.apres;
       for(let h = Math.floor(sm / U); h < Math.ceil(em / U); h++){
         const c = cells.get(h);
         if(c) c.busy = { kind: code === "I" ? "perso" : "poste", code, label: pj.ex ? (pj.ex.note || POSTE[code] || "Travail") : (POSTE[code] || code) };
@@ -1088,7 +1092,7 @@ function boardView(m, reg){
     rows += `<div class="row"><div class="rlab"><span class="rday${fer ? " rfer" : ""}"${fer ? ` title="Férié : ${esc(fer)}"` : ""}>${JOURS[date.getUTCDay()].replace(".", "")}</span><span class="rnum tnum">${date.getUTCDate()}</span>${code ? `<span class="rcode" title="${esc(POSTE[code] || code)}">${esc(code)}</span>` : ""}</div><div class="bar">${segHtml}</div></div>`;
   }
   const cyc = reg.cycle;
-  const legendCycle = cyc.actif !== false ? `<span>M · A · N · J · R = ton poste du jour (cycle de travail)${cyc.trajetMin ? `, trajet de ${esc(cyc.trajetMin)} min compris` : ""}</span>` : "";
+  const legendCycle = cyc.actif !== false ? `<span>M · A · N · J · R = ton poste du jour (cycle de travail)</span>` : "";
   return `<section class="sec"><h2>Tableau de garde</h2>
     <div class="panel board">${rows}
       <div class="legend"><span><b style="background:var(--gap)"></b>À couvrir</span><span><b style="background:var(--cover)"></b>Remplacé</span><span><b class="s-prov"></b>En attente de validation</span><span><b style="background:var(--dispo)"></b>Moi, dispo</span><span><b class="s-hors" style="border:1px solid var(--line)"></b>Hors garde (journée selon les dispos de chacun)</span><span><u class="rfer">Jour souligné</u> = férié</span>${legendCycle}</div>
@@ -1174,7 +1178,7 @@ function travailView(reg){
       <div class="line1"><b>${esc(cap(fmtDay(d * CPD, true)))}</b>${gd.has(d) ? `<span class="pill p-peut">Jour de garde</span>` : ""}</div>
       <h4 class="ed-h">Ton travail ce jour-là</h4>
       <div class="chips" role="radiogroup" aria-label="Travail ce jour-là">${opts.map(([v, l]) => `<button type="button" class="chip${choix === v ? " on" : ""}" role="radio" aria-checked="${choix === v}" data-act="ex-choix" data-v="${v}">${esc(l)}</button>`).join("")}</div>
-      ${choix === "X" ? `<div class="hr-row"><span class="hr-l">Horaires</span><select id="ex-de" aria-label="De">${hourSelOpts(de)}</select><span class="gm-l">→</span><select id="ex-a" aria-label="À">${hourSelOpts(a)}</select>${hm(a) <= hm(de) ? `<span class="hr-n">le lendemain</span>` : ""}</div>` : ""}
+      ${choix === "X" ? `<span class="item-sub">Pas tes heures de travail : de l'heure où tu n'es <b>plus dispo</b> à celle où tu es <b>de nouveau dispo</b>, trajet compris.</span><div class="hr-row"><span class="hr-l">Indispo</span><select id="ex-de" aria-label="De">${hourSelOpts(de)}</select><span class="gm-l">→</span><select id="ex-a" aria-label="À">${hourSelOpts(a)}</select>${hm(a) <= hm(de) ? `<span class="hr-n">le lendemain</span>` : ""}</div>` : ""}
       ${choix !== "cycle" ? `<label for="ex-note">Pourquoi (facultatif)<input type="text" id="ex-note" autocomplete="off" placeholder="Arrêt maladie, formation, remplacement au boulot…" value="${esc(S.ui.exNote != null ? S.ui.exNote : (ex && ex.note) || "")}"></label>` : ""}
       <label class="chk" for="ex-multi"><input type="checkbox" id="ex-multi"${S.ui.exMulti ? " checked" : ""}> Sur plusieurs jours</label>
       ${S.ui.exMulti ? `<label for="ex-fin">Jusqu'au (inclus)<input type="date" id="ex-fin" min="${esc(k)}" value="${esc(S.ui.exFin || k)}"></label>` : ""}
@@ -1394,11 +1398,13 @@ function settingsView(week, reg){
       </div>
       <span class="item-sub">Touche un jour pour choisir ton poste dans la liste : Repos, Matin, Après-midi, Nuit ou Journée.</span>
       <div class="cy-grid">${cyCells(c)}</div>
-      <span class="muted" style="font-size:14px">Pour chaque poste : de quelle heure à quelle heure tu ne peux pas assurer la garde, trajet compris.</span>
-      <div class="hr-list">${["M", "A", "N", "J"].map(k => hrRow(k, c.horaires[k])).join("")}</div>
+      <div class="warn-box" role="note"><b>⚠️ Ne mets pas tes heures de quart.</b>
+        <span>À gauche : l'heure à partir de laquelle tu <b>n'es plus dispo</b> pour la garde, trajet compris.</span>
+        <span>À droite : l'heure à laquelle tu es <b>de nouveau dispo</b>.</span>
+        <span class="wb-ex">Exemple : quart d'après-midi 14h → 22h, tu mets <b>11h → 22h30</b>.</span></div>
+      <div class="hr-list"><div class="hr-row hr-head" aria-hidden="true"><span></span><span>Plus dispo à</span><span></span><span>De nouveau dispo à</span></div>${["M", "A", "N", "J"].map(k => hrRow(k, c.horaires[k])).join("")}</div>
       <div class="grid2">
         <label for="c-nf">Après une nuit, si le lendemain est un samedi, un dimanche ou un férié, dispo dès<select id="c-nf" data-rf="cycle.finNuitFerie"><option value=""${c.finNuitFerie ? "" : " selected"}>Pas de règle</option>${c.finNuitFerie ? hourSelOpts(c.finNuitFerie) : hourSelOpts("").replace(' selected', '')}</select></label>
-        <label for="c-tr">Marge en plus, avant et après<select id="c-tr" data-rf="cycle.trajetMin" data-num="1">${numOpts([0, 15, 30, 45, 60, 90, 120], Number(c.trajetMin) || 0, " min")}</select></label>
       </div>` : `<span class="muted" style="font-size:14px">Sans cycle, note tes indispos dans « Mes indispos hors travail ».</span>`}
     </div></details>
     <details class="set acc" data-acc="Collègues"${accOpen("Collègues")}><summary>Collègues</summary><div class="acc-body">
@@ -1436,6 +1442,30 @@ function hourSelOpts(sel, ref){
 function numOpts(vals, sel, unit){ return vals.map(v => `<option value="${v}"${Number(sel) === v ? " selected" : ""}>${v}${unit || ""}</option>`).join(""); }
 function range(a, b){ const o = []; for(let i = a; i <= b; i++) o.push(i); return o; }
 function posteOpts(code){ return ["R", "M", "A", "N", "J"].map(k => `<option value="${k}"${k === code ? " selected" : ""}>${POSTE[k]}</option>`).join(""); }
+function margesOf(cyc){
+  const t = Number((cyc || {}).trajetMin) || 0, v = x => x === undefined || x === null || x === "" ? t : Number(x) || 0;
+  return { avant: v((cyc || {}).margeAvant), apres: v((cyc || {}).margeApres) };
+}
+// Anciennes versions : une marge s'ajoutait avant et après chaque poste. On l'intègre dans les heures
+// (ex. 13h → 21h avec 30 min devient 12h30 → 21h30) : le planning reste identique.
+function migrerMarges(){
+  if(S.readOnly || !S.reg || !S.reg.cycle) return;
+  const reg = currentReg(), mg = margesOf(reg.cycle);
+  if(!mg.avant && !mg.apres) return;
+  const fmt = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
+  const elargir = v => {
+    if(!RX_PLAGE.test(v || "")) return v;
+    const [a, b] = v.split("-").map(hm), dur = b > a ? b - a : b - a + 1440;
+    const s2 = a - mg.avant;
+    return fmt(s2) + "-" + fmt(s2 + Math.min(1440, dur + mg.avant + mg.apres));
+  };
+  const c = clone(reg.cycle);
+  c.horaires = Object.fromEntries(Object.entries(c.horaires || {}).map(([k, v]) => [k, elargir(v)]));
+  c.trajetMin = 0; c.margeAvant = 0; c.margeApres = 0;
+  const ex = clone(reg.exceptions || {});
+  for(const e of Object.values(ex)) if(e && e.code === "X" && e.de && e.a){ const [de, a] = elargir(`${e.de}-${e.a}`).split("-"); e.de = de; e.a = a; }
+  saveReg({ cycle: c, exceptions: ex });
+}
 function hrRow(k, val){
   const [s, e] = RX_PLAGE.test(val || "") ? val.split("-") : ["", ""];
   return `<div class="hr-row"><span class="hr-l">${POSTE[k]}</span>
@@ -2164,6 +2194,7 @@ function render(){
     return;
   }
   if(!S.weeksLoaded){ app.innerHTML = `<div class="loading">Chargement du planning…</div>${S.notice ? `<div class="notice">${esc(S.notice)}</div>` : ""}`; return; }
+  migrerMarges();
   const reg = currentReg(), week = activeWeek();
   let html = (S.notice ? `<div class="notice">${esc(S.notice)}</div>` : "");
   if(S.ui.newWeek) html += newWeekView();
