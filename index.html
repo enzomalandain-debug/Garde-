@@ -415,7 +415,7 @@ input,select,textarea{font-size:16px!important}
 /*LOGIC-START*/
 const PAT_DEFAULT = "MMAANNRRRMMAAARRRRMMNNNRRRJMAANNRRR";
 const U = 30, CPH = 60 / U, CPD = 1440 / U; // cases de 30 min
-const APP_VERSION = "17 nov. 2026 (n°28)";
+const APP_VERSION = "19 nov. 2026 (n°29)";
 const GARDE_PRESETS = {
   we: { label: "Week-end + nuits de semaine", modele: [ { j: 0, de: "19:00", aj: 3, a: "07:00" }, { j: 3, de: "19:00", aj: 4, a: "07:00" }, { j: 4, de: "19:00", aj: 5, a: "07:00" }, { j: 5, de: "19:00", aj: 6, a: "07:00" }, { j: 6, de: "19:00", aj: 7, a: "07:00" } ] },
   h24: { label: "7 jours, 24h/24", modele: [ { j: 0, de: "07:00", aj: 7, a: "07:00" } ] },
@@ -2227,17 +2227,30 @@ document.addEventListener("toggle", e => {
 setInterval(() => { if((S.ui.view || "garde") === "garde" && !document.hidden) requestRender(); }, 60000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) requestRender(); });
 // La barre d'onglets disparaît pendant la saisie : sur iPhone, le clavier la fait sauter.
+// Seuls les champs où l'on tape du texte comptent (un menu déroulant n'ouvre pas le clavier).
 function setBodyView(cls){
   const keep = ["kbd", "kbd-vv"].filter(c => document.body.classList.contains(c));
   document.body.className = [cls, ...keep].filter(Boolean).join(" ");
+  kbdCheck();
 }
-function isTypingEl(el){ return !!el && (el.tagName === "TEXTAREA" || el.tagName === "SELECT" || (el.tagName === "INPUT" && !/^(checkbox|radio|button|submit|file|range|color)$/i.test(el.type))); }
-document.addEventListener("focusin", e => { if(isTypingEl(e.target)) document.body.classList.add("kbd"); });
-document.addEventListener("focusout", () => { setTimeout(() => { if(!isTypingEl(document.activeElement)) document.body.classList.remove("kbd"); }, 150); });
+function isTypingEl(el){ return !!el && el.isConnected !== false && (el.tagName === "TEXTAREA" || el.isContentEditable || (el.tagName === "INPUT" && !/^(checkbox|radio|button|submit|reset|file|range|color|date|time|datetime-local|month|week)$/i.test(el.type))); }
+// Sécurité : si on n'est plus en train de taper, la barre revient (iOS ne prévient pas toujours).
+function kbdCheck(){
+  const typing = isTypingEl(document.activeElement);
+  if(!typing) document.body.classList.remove("kbd");
+  if(window.visualViewport){
+    const vv = window.visualViewport;
+    document.body.classList.toggle("kbd-vv", typing && vv.height < window.innerHeight - 120);
+  } else document.body.classList.remove("kbd-vv");
+}
+document.addEventListener("focusin", e => { if(isTypingEl(e.target)) document.body.classList.add("kbd"); else kbdCheck(); });
+document.addEventListener("focusout", () => { setTimeout(kbdCheck, 150); });
+document.addEventListener("change", () => { setTimeout(kbdCheck, 50); }, true);
+document.addEventListener("touchend", () => { setTimeout(kbdCheck, 300); }, { passive: true });
+document.addEventListener("visibilitychange", () => { if(!document.hidden) setTimeout(kbdCheck, 100); });
 if(window.visualViewport){
-  const vv = window.visualViewport;
-  const chk = () => document.body.classList.toggle("kbd-vv", vv.height < window.innerHeight - 120);
-  vv.addEventListener("resize", chk); chk();
+  window.visualViewport.addEventListener("resize", () => { kbdCheck(); setTimeout(kbdCheck, 400); });
+  kbdCheck();
 }
 $("#tabbar").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if(b) goTab(b.dataset.view); });
 
